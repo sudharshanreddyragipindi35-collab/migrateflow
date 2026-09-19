@@ -14,7 +14,7 @@ Status values are `PASS`, `FAIL`, `BLOCKED`, or `PENDING`. Every `PASS` requires
 | 7 | Consultant user interface | PASS | Vitest 3 passed and production build succeeded; five responsive views, SSE, decisions, preview, retry, rollback confirmation, empty/error states, and labels implemented. |
 | 8 | Security observability and evaluation | PASS | `pytest`: 28 passed; six-case evaluation reports all required metrics; prompt/log injection and PII tests plus JSON/CSV audit export pass. |
 | 9 | End to end hardening | PASS | 29 backend tests, Ruff, mypy, ESLint, 3 frontend tests/build, supervised E2E retry/rollback, and healthy Docker Compose services passed. |
-| 10 | Submission package | PENDING | |
+| 10 | Submission package | PASS | Copy-ready README, one-page approach, timed demo, submission checklist, final validation, full regression, Docker health, and secret/TODO scans completed. |
 
 ## Level evidence
 
@@ -99,3 +99,11 @@ Detailed acceptance evidence is added under a heading for each completed level a
 - Results: Ruff passed; mypy passed 42 source files; backend 29 passed; frontend lint passed; frontend 3 passed and built; both Compose services started and backend reported healthy
 - Evidence: `backend/tests/test_end_to_end.py`, `scripts/setup.ps1`, `scripts/test.ps1`, `docker-compose.yml`
 - Residual risk: local Ollama availability and model quality remain environment-dependent; deterministic fallback and explicit unavailable states are retained.
+
+## Level 10 Submission package
+
+- Status: PASS
+- Commands: `./scripts/test.ps1`, Docker health requests, tracked-file and secret-pattern scans, critical TODO scan
+- Results: backend lint/type/29 tests passed; frontend lint/3 tests/build passed; six-case evaluation passed; no tracked `.env`, database, upload, secret pattern, fake-success marker, or critical TODO found
+- Evidence: `README.md`, `APPROACH.md`, `DEMO_SCRIPT.md`, `SUBMISSION_CHECKLIST.md`, `FINAL_VALIDATION.md`
+- Residual risk: final video recording and UI screenshot capture are manual presentation tasks identified in the submission checklist.
