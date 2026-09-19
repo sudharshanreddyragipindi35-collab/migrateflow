@@ -20,6 +20,7 @@ Status values are `PASS`, `FAIL`, `BLOCKED`, or `PENDING`. Every `PASS` requires
 | 17 | FDE alignment and runtime performance gates | PASS | Capability matrix documents implemented versus deliberately excluded concepts; transactional fallback and live-Ollama smoke tests plus an abrupt 200-user/1,000-request spike passed. |
 | 18 | Safe record correction UX | PASS | Required dates use a native date picker with ISO guidance and an explicit reject-instead-of-guessing boundary; 5 frontend tests pass. |
 | 19 | Batched semantic mapping | PASS | Ollama and Anthropic use one structured request per source file; strict count validation, prompt-safety tests, 36 backend tests, and a live Ollama end-to-end smoke pass. |
+| 20 | Plain-language review guidance | PASS | Review cards use readable field names and actionable errors; dates show `YYYY-MM-DD` with a concrete example and never-guess guidance; 37 backend and 5 frontend tests pass. |
 
 ## Level evidence
 

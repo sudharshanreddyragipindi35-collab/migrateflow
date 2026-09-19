@@ -1,4 +1,5 @@
 from app.cleaning.service import clean_record, reconcile_records
+from app.validation.employee import validation_errors
 
 
 FULL_MAPPING = {
@@ -50,3 +51,18 @@ def test_missing_required_values_remain_explicit_failures() -> None:
     preview = clean_record("employees.csv", "3", {"ID": "E3"}, FULL_MAPPING)
     assert preview.status == "ESCALATION"
     assert any("email" in item for item in preview.errors)
+
+
+def test_validation_errors_are_actionable_for_nontechnical_reviewers() -> None:
+    payload = {
+        "employee_id": 202,
+        "first_name": "Ada",
+        "last_name": "Lovelace",
+        "email": "ada@example.test",
+        "hire_date": "unknown",
+        "department": "Engineering",
+        "employment_status": "Active",
+    }
+    errors = validation_errors(payload)
+    assert "employee_id: Enter the employee ID as text, for example EM202" in errors
+    assert "hire_date: Enter a real date in YYYY-MM-DD format, for example 2024-01-15" in errors

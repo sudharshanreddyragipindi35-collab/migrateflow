@@ -181,6 +181,7 @@ Do not commit `.env`, databases, uploads, raw client data, or secrets. Model inp
 - Docker backend is unhealthy: inspect `docker compose logs backend` and confirm the data volume is writable.
 - Upload rejected: use only nonempty `.csv` or `.xlsx` files within configured count and size limits.
 - A record does not push: resolve all mapping and record-level decisions in Review Queue, then inspect validation evidence in Data Preview.
+- A date needs correction: enter it as `YYYY-MM-DD` (for example, `2024-01-15` means 15 January 2024). If the real date is unknown, reject the record instead of guessing.
 
 ## Known limitations
 

@@ -7,6 +7,25 @@ from pydantic import BaseModel, ConfigDict, field_validator
 DEPARTMENTS = {"Engineering", "Finance", "Human Resources", "Operations", "Sales", "Support"}
 STATUSES = {"Active", "Inactive", "Leave", "Terminated"}
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+DATE_FIELDS = {"date_of_birth", "hire_date"}
+
+
+def _friendly_error(item: dict[str, Any]) -> str:
+    field = ".".join(str(part) for part in item["loc"])
+    error_type = str(item.get("type", ""))
+    if field in DATE_FIELDS:
+        return f"{field}: Enter a real date in YYYY-MM-DD format, for example 2024-01-15"
+    if error_type == "missing":
+        return f"{field}: This required value is missing"
+    if field == "employee_id" and error_type == "string_type":
+        return "employee_id: Enter the employee ID as text, for example EM202"
+    if field == "email":
+        return "email: Enter a complete email address, for example name@company.com"
+    if field == "department":
+        return f"department: Choose one of: {', '.join(sorted(DEPARTMENTS))}"
+    if field == "employment_status":
+        return f"employment_status: Choose one of: {', '.join(sorted(STATUSES))}"
+    return f"{field}: {item['msg']}"
 
 
 class EmployeeRecord(BaseModel):
@@ -58,7 +77,6 @@ def validation_errors(payload: dict[str, Any]) -> list[str]:
         EmployeeRecord.model_validate(payload)
     except Exception as exc:
         if hasattr(exc, "errors"):
-            return [f"{'.'.join(str(part) for part in item['loc'])}: {item['msg']}" for item in exc.errors()]
+            return [_friendly_error(item) for item in exc.errors()]
         return [str(exc)]
     return []
-

@@ -26,7 +26,11 @@ describe("ReviewQueue", () => {
 
     render(<ReviewQueue batchId="batch-1" onCompleted={() => undefined} />);
 
-    expect(await screen.findByPlaceholderText("Enter corrected hire_date")).toHaveAttribute("type", "date");
-    expect(screen.getByText(/If the correct date is unknown, reject the record instead of guessing/i)).toBeInTheDocument();
+    expect(await screen.findByLabelText("Corrected Hire date")).toHaveAttribute("type", "date");
+    expect(screen.getByText("Required format: YYYY-MM-DD")).toBeInTheDocument();
+    expect(screen.getByText("Example: 2024-01-15 means 15 January 2024.")).toBeInTheDocument();
+    expect(screen.getByText(/If the correct date is unknown, reject the record/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Save correction" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Reject record" })).toBeInTheDocument();
   });
 });
