@@ -5,7 +5,7 @@ Status values are `PASS`, `FAIL`, `BLOCKED`, or `PENDING`. Every `PASS` requires
 | Level | Scope | Status | Evidence |
 |---:|---|---|---|
 | 0 | Repository contract and architecture | PASS | Backend `pytest` 2 passed; frontend Vitest 1 passed; production build succeeded; target schema parsed. |
-| 1 | Deterministic ingestion and profiling | PENDING | |
+| 1 | Deterministic ingestion and profiling | PASS | `pytest`: 7 passed including three-file CSV/XLSX batch, masking, malformed, empty, and invalid-extension coverage. |
 | 2 | Target schema and mapping intelligence | PENDING | |
 | 3 | Autonomy policy and human interrupt | PENDING | |
 | 4 | Cleaning reconciliation and validation | PENDING | |
@@ -27,3 +27,11 @@ Detailed acceptance evidence is added under a heading for each completed level a
 - Results: backend 2 passed; frontend 1 passed; TypeScript and Vite production build passed; schema parse passed
 - Evidence: `backend/app/main.py`, `backend/tests/test_health.py`, `target_schema/employee.yaml`, `docs/ARCHITECTURE.md`, `docs/AUTONOMY_POLICY.md`
 - Residual risk: Docker build is deferred to the end-to-end hardening level.
+
+## Level 1 Deterministic ingestion and profiling
+
+- Status: PASS
+- Commands: `python -m pytest -q`, `python scripts/generate_sample_xlsx.py`
+- Results: 7 passed; all three sample sources ingested together; CSV and XLSX profiles persisted and reloaded
+- Evidence: `backend/app/ingestion/profiler.py`, `backend/app/api/batches.py`, `backend/tests/test_ingestion.py`, `sample_data/`
+- Residual risk: encoding detection intentionally uses a bounded deterministic fallback list rather than probabilistic detection.

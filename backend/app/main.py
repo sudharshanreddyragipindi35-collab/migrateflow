@@ -2,11 +2,14 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
+from app.api.batches import router as batches_router
+from app.db.database import init_db
 
 
 def create_app() -> FastAPI:
     settings = get_settings()
     application = FastAPI(title="MigrateFlow API", version="0.1.0")
+    init_db()
     application.add_middleware(
         CORSMiddleware,
         allow_origins=[item.strip() for item in settings.cors_origins.split(",") if item.strip()],
@@ -23,8 +26,9 @@ def create_app() -> FastAPI:
     def api_health() -> dict[str, str]:
         return {"status": "ok"}
 
+    application.include_router(batches_router)
+
     return application
 
 
 app = create_app()
-
