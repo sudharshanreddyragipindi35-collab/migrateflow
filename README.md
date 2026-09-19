@@ -90,6 +90,7 @@ Copy `.env.example` to `.env`. Important settings include:
 | `MAX_UPLOAD_FILES` | Per-batch file limit | `10` |
 | `MAX_UPLOAD_BYTES` | Per-file byte limit | `10485760` |
 | `OLLAMA_BASE_URL` | Local Ollama endpoint | `http://localhost:11434` |
+| `OLLAMA_DOCKER_BASE_URL` | Host Ollama endpoint as seen from Docker | `http://host.docker.internal:11434` |
 | `OLLAMA_MODEL` | Open-source instruction model | `qwen2.5:7b-instruct` |
 | `ANTHROPIC_API_KEY` | Anthropic credential; intentionally blank in source | blank |
 | `ANTHROPIC_MODEL` | Anthropic model identifier | `claude-sonnet-4-6` |
@@ -161,6 +162,7 @@ Do not commit `.env`, databases, uploads, raw client data, or secrets. Model inp
 ## Troubleshooting
 
 - `503` from mapping proposals: start Ollama or use `?fallback=true` / `MODEL_MODE=fallback`.
+- Docker cannot reach Ollama: keep `OLLAMA_BASE_URL=http://localhost:11434` for native runs and `OLLAMA_DOCKER_BASE_URL=http://host.docker.internal:11434` for Compose. On Linux, Compose maps that name through the host gateway.
 - Frontend cannot reach the API: confirm `VITE_API_BASE_URL` and `CORS_ORIGINS` agree.
 - Docker backend is unhealthy: inspect `docker compose logs backend` and confirm the data volume is writable.
 - Upload rejected: use only nonempty `.csv` or `.xlsx` files within configured count and size limits.
