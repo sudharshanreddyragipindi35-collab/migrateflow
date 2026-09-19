@@ -73,10 +73,31 @@ def _read_xlsx(path: Path) -> tuple[pd.DataFrame, None, str]:
         raise IngestionError(f"Invalid XLSX file: {exc}") from exc
     if not rows:
         raise IngestionError("Spreadsheet is empty")
-    headers = [str(value).strip() if value is not None else "" for value in rows[0]]
-    if not any(headers):
+    raw_headers = [str(value).strip() if value is not None else "" for value in rows[0]]
+    if not any(raw_headers):
         raise IngestionError("Spreadsheet header is empty")
+    headers = _unique_headers(rows[0])
     return pd.DataFrame(rows[1:], columns=headers), None, sheet.title
+
+
+def _unique_headers(values: list[Any]) -> list[str]:
+    headers: list[str] = []
+    seen: set[str] = set()
+    occurrences: dict[str, int] = {}
+    for index, value in enumerate(values, start=1):
+        base = str(value).strip() if value is not None else ""
+        if not base:
+            base = f"unnamed_column_{index}"
+        occurrence = occurrences.get(base, 0) + 1
+        occurrences[base] = occurrence
+        candidate = base if occurrence == 1 else f"{base}__{occurrence}"
+        while candidate in seen:
+            occurrence += 1
+            occurrences[base] = occurrence
+            candidate = f"{base}__{occurrence}"
+        seen.add(candidate)
+        headers.append(candidate)
+    return headers
 
 
 def read_source(path: Path) -> tuple[pd.DataFrame, str | None, str | None]:
@@ -125,9 +146,9 @@ def profile_frame(frame: pd.DataFrame, file_name: str, encoding: str | None, she
         raise IngestionError("Source file contains no data rows")
     frame = frame.map(_json_value)
     profiles: list[ColumnProfile] = []
-    for raw_name in frame.columns:
+    for column_index, raw_name in enumerate(frame.columns):
         name = str(raw_name).strip()
-        series = frame[raw_name]
+        series = frame.iloc[:, column_index]
         non_null = series.dropna()
         patterns = sorted(
             {label for value in non_null.astype(str) for pattern, label in DATE_PATTERNS.items() if re.match(pattern, value)}
@@ -161,4 +182,3 @@ def profile_file(path: Path, safe_name: str) -> SourceFileProfile:
 
 def profile_to_json(profile: SourceFileProfile) -> str:
     return json.dumps(profile.model_dump(mode="json"), separators=(",", ":"))
-

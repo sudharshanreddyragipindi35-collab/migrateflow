@@ -2,6 +2,7 @@ from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
+from openpyxl import Workbook
 
 from app.ingestion.profiler import IngestionError, profile_file
 from app.main import app
@@ -59,3 +60,22 @@ def test_three_sample_files_ingest_together() -> None:
     profiles = response.json()["profiles"]
     assert {item["file_name"] for item in profiles} == set(names)
     assert next(item for item in profiles if item["file_name"].endswith("xlsx"))["sheet_name"] == "Employee Master"
+
+
+def test_xlsx_duplicate_and_blank_headers_are_made_unique(tmp_path: Path) -> None:
+    source = tmp_path / "duplicate_headers.xlsx"
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.append(["employee_id", "email", "email", None])
+    sheet.append(["E001", "work@example.com", "home@example.com", "active"])
+    workbook.save(source)
+
+    profile = profile_file(source, source.name)
+
+    assert [item.name for item in profile.columns] == [
+        "employee_id",
+        "email",
+        "email__2",
+        "unnamed_column_4",
+    ]
+    assert all(item.null_ratio == 0 for item in profile.columns)
