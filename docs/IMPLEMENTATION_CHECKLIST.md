@@ -11,7 +11,7 @@ Status values are `PASS`, `FAIL`, `BLOCKED`, or `PENDING`. Every `PASS` requires
 | 4 | Cleaning reconciliation and validation | PASS | `pytest`: 19 passed; deterministic provenance, ambiguous dates, required failures, exact merge, conflicts, immutable originals, and two-attempt escalation covered. |
 | 5 | Mock target integration | PASS | `pytest`: 22 passed; per-record persistence, retryable/permanent states, idempotent replay/conflict, approved-only push, and batch rollback covered. |
 | 6 | Backend APIs events and persistence | PASS | `pytest`: 25 passed; OpenAPI contract, ordered typed SSE snapshot/reconnect, error envelope, and durable state covered. |
-| 7 | Consultant user interface | PENDING | |
+| 7 | Consultant user interface | PASS | Vitest 3 passed and production build succeeded; five responsive views, SSE, decisions, preview, retry, rollback confirmation, empty/error states, and labels implemented. |
 | 8 | Security observability and evaluation | PENDING | |
 | 9 | End to end hardening | PENDING | |
 | 10 | Submission package | PENDING | |
@@ -75,3 +75,11 @@ Detailed acceptance evidence is added under a heading for each completed level a
 - Results: 25 passed
 - Evidence: `backend/app/api/events.py`, `backend/app/events/service.py`, `backend/app/main.py`, `backend/tests/test_api_contract.py`
 - Residual risk: the prototype uses an idempotent schema-version initializer; production deployment should promote the documented Alembic migration path.
+
+## Level 7 Consultant user interface
+
+- Status: PASS
+- Commands: `npm test`, `npm run build`
+- Results: 3 component tests passed; TypeScript and Vite production build passed
+- Evidence: `frontend/src/App.tsx`, `frontend/src/pages/`, `frontend/src/api/client.ts`, `frontend/tests/App.test.tsx`
+- Residual risk: browser-level accessibility and cross-browser checks remain part of final manual QA.

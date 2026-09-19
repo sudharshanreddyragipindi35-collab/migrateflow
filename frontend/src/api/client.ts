@@ -1,0 +1,14 @@
+import type { Escalation, PushResult, RecordPreview } from "../types";
+const baseUrl = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
+async function request<T>(path: string, init?: RequestInit): Promise<T> { const response = await fetch(`${baseUrl}${path}`, init); if (!response.ok) { const body = await response.json().catch(() => ({})); throw new Error(body?.error?.message ?? `Request failed with ${response.status}`); } return response.json() as Promise<T>; }
+export const api = {
+  upload(files: File[]) { const body = new FormData(); files.forEach((file) => body.append("files", file)); return request<{ batch_id: string }>("/api/batches", { method: "POST", body }); },
+  escalations: (batchId: string) => request<Escalation[]>(`/api/batches/${batchId}/escalations`),
+  resolve(id: string, action: string, correctedValue?: string) { return request(`/api/escalations/${id}/resolve`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, corrected_value: correctedValue, actor: "consultant" }) }); },
+  records: (batchId: string) => request<RecordPreview[]>(`/api/batches/${batchId}/records`),
+  pushes: (batchId: string) => request<PushResult[]>(`/mock-target/migrations/${batchId}`),
+  retry: (batchId: string) => request<PushResult[]>(`/mock-target/migrations/${batchId}/retry`, { method: "POST" }),
+  rollback: (batchId: string) => request<{ rolled_back: number }>(`/mock-target/migrations/${batchId}`, { method: "DELETE" }),
+  eventUrl: (batchId: string) => `${baseUrl}/api/batches/${batchId}/events`,
+};
+
