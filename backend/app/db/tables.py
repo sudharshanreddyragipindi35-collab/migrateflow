@@ -37,3 +37,45 @@ class MappingProposalRow(Base):
     source_file: Mapped[str] = mapped_column(String(255))
     source_column: Mapped[str] = mapped_column(String(255))
     proposal_json: Mapped[str] = mapped_column(Text)
+
+
+class WorkflowStateRow(Base):
+    __tablename__ = "workflow_states"
+
+    batch_id: Mapped[str] = mapped_column(ForeignKey("ingestion_batches.id"), primary_key=True)
+    thread_id: Mapped[str] = mapped_column(String(36), unique=True)
+    status: Mapped[str] = mapped_column(String(32))
+    state_json: Mapped[str] = mapped_column(Text)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
+
+
+class EscalationRow(Base):
+    __tablename__ = "escalations"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    batch_id: Mapped[str] = mapped_column(ForeignKey("ingestion_batches.id"), index=True)
+    source_context_json: Mapped[str] = mapped_column(Text)
+    suggestion: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    alternatives_json: Mapped[str] = mapped_column(Text)
+    confidence_json: Mapped[str] = mapped_column(Text)
+    reason_code: Mapped[str] = mapped_column(String(64))
+    allowed_actions_json: Mapped[str] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(String(16), default="OPEN")
+    decision_json: Mapped[str | None] = mapped_column(Text, nullable=True)
+    actor: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class AuditEventRow(Base):
+    __tablename__ = "audit_events"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    batch_id: Mapped[str] = mapped_column(String(36), index=True)
+    actor_type: Mapped[str] = mapped_column(String(32))
+    actor_id: Mapped[str] = mapped_column(String(255))
+    action: Mapped[str] = mapped_column(String(128))
+    entity_type: Mapped[str] = mapped_column(String(64))
+    entity_id: Mapped[str] = mapped_column(String(255))
+    details_json: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)

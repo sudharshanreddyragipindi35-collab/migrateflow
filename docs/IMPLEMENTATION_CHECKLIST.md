@@ -7,7 +7,7 @@ Status values are `PASS`, `FAIL`, `BLOCKED`, or `PENDING`. Every `PASS` requires
 | 0 | Repository contract and architecture | PASS | Backend `pytest` 2 passed; frontend Vitest 1 passed; production build succeeded; target schema parsed. |
 | 1 | Deterministic ingestion and profiling | PASS | `pytest`: 7 passed including three-file CSV/XLSX batch, masking, malformed, empty, and invalid-extension coverage. |
 | 2 | Target schema and mapping intelligence | PASS | `pytest`: 11 passed; structured proposals, component scoring, aliases, ambiguity, collisions, invalid output, and labelled fallback covered. |
-| 3 | Autonomy policy and human interrupt | PENDING | |
+| 3 | Autonomy policy and human interrupt | PASS | `pytest`: 15 passed; SQLite-checkpointed StateGraph, policy gates, durable pause/correct/resume, duplicate resolution, and audit coverage. |
 | 4 | Cleaning reconciliation and validation | PENDING | |
 | 5 | Mock target integration | PENDING | |
 | 6 | Backend APIs events and persistence | PENDING | |
@@ -43,3 +43,11 @@ Detailed acceptance evidence is added under a heading for each completed level a
 - Results: 11 passed
 - Evidence: `backend/app/mapping/schema.py`, `backend/app/mapping/engine.py`, `backend/app/api/mappings.py`, `backend/tests/test_mapping.py`
 - Residual risk: a live Ollama call requires the configured local model and is intentionally unavailable in automated tests; deterministic fallback is explicit.
+
+## Level 3 Autonomy policy and human interrupt
+
+- Status: PASS
+- Commands: `python -m pytest -q`
+- Results: 15 passed
+- Evidence: `backend/app/agent/graph.py`, `backend/app/agent/policy.py`, `backend/app/agent/service.py`, `backend/tests/test_policy.py`, `backend/tests/test_workflow.py`
+- Residual risk: the HTTP workflow service mirrors durable graph state in application tables so it can be queried efficiently; the graph checkpointer remains the orchestration checkpoint contract.
