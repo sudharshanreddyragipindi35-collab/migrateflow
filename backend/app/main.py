@@ -6,6 +6,7 @@ from app.api.batches import router as batches_router
 from app.api.mappings import router as mappings_router
 from app.api.workflow import router as workflow_router
 from app.api.records import router as records_router
+from app.api.mock_target import router as mock_target_router
 from app.db.database import init_db
 
 
@@ -33,6 +34,7 @@ def create_app() -> FastAPI:
     application.include_router(mappings_router)
     application.include_router(workflow_router)
     application.include_router(records_router)
+    application.include_router(mock_target_router)
 
     return application
 

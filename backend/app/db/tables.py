@@ -94,3 +94,17 @@ class TransformedRecordRow(Base):
     status: Mapped[str] = mapped_column(String(32))
     errors_json: Mapped[str] = mapped_column(Text)
     attempt_count: Mapped[int] = mapped_column(Integer, default=1)
+
+
+class TargetWriteRow(Base):
+    __tablename__ = "target_writes"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    batch_id: Mapped[str] = mapped_column(String(36), index=True)
+    source_record_id: Mapped[str] = mapped_column(String(255))
+    idempotency_key: Mapped[str] = mapped_column(String(255), unique=True, index=True)
+    payload_hash: Mapped[str] = mapped_column(String(64))
+    payload_json: Mapped[str] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(String(32))
+    retry_count: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)

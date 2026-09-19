@@ -9,7 +9,7 @@ Status values are `PASS`, `FAIL`, `BLOCKED`, or `PENDING`. Every `PASS` requires
 | 2 | Target schema and mapping intelligence | PASS | `pytest`: 11 passed; structured proposals, component scoring, aliases, ambiguity, collisions, invalid output, and labelled fallback covered. |
 | 3 | Autonomy policy and human interrupt | PASS | `pytest`: 15 passed; SQLite-checkpointed StateGraph, policy gates, durable pause/correct/resume, duplicate resolution, and audit coverage. |
 | 4 | Cleaning reconciliation and validation | PASS | `pytest`: 19 passed; deterministic provenance, ambiguous dates, required failures, exact merge, conflicts, immutable originals, and two-attempt escalation covered. |
-| 5 | Mock target integration | PENDING | |
+| 5 | Mock target integration | PASS | `pytest`: 22 passed; per-record persistence, retryable/permanent states, idempotent replay/conflict, approved-only push, and batch rollback covered. |
 | 6 | Backend APIs events and persistence | PENDING | |
 | 7 | Consultant user interface | PENDING | |
 | 8 | Security observability and evaluation | PENDING | |
@@ -59,3 +59,11 @@ Detailed acceptance evidence is added under a heading for each completed level a
 - Results: 19 passed
 - Evidence: `backend/app/cleaning/service.py`, `backend/app/validation/employee.py`, `backend/app/api/records.py`, `backend/tests/test_cleaning.py`
 - Residual risk: probable duplicate scoring is intentionally conservative and routes any conflicting nonempty values to review.
+
+## Level 5 Mock target integration
+
+- Status: PASS
+- Commands: `python -m pytest -q`
+- Results: 22 passed
+- Evidence: `backend/app/integration/service.py`, `backend/app/api/mock_target.py`, `backend/tests/test_integration.py`
+- Residual risk: deterministic demo failures are disabled by default and intended only for the recorded demonstration path.
