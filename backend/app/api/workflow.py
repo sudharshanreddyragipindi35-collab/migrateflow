@@ -44,6 +44,11 @@ def resolve(escalation_id: str, decision: EscalationDecision, db: Session = Depe
         raise HTTPException(404, "Escalation not found")
     batch_id = row.batch_id
     result = resolve_escalation(db, row, decision)
-    emit_event(db, batch_id, "workflow_resumed", {"status": result.status, "action": decision.action.value})
+    emit_event(
+        db,
+        batch_id,
+        "workflow_resumed" if result.status == "COMPLETED" else "progress",
+        {"status": result.status, "action": decision.action.value, "open_escalations": result.open_escalations},
+    )
     db.commit()
     return result

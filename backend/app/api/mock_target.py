@@ -1,12 +1,12 @@
 import json
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
 from app.db.database import get_db
-from app.db.tables import TargetWriteRow, TransformedRecordRow
+from app.db.tables import TargetWriteRow, TransformedRecordRow, WorkflowStateRow
 from app.integration.models import PushRequest, PushResult
 from app.integration.service import payload_hash, push_record, retry_batch, rollback_batch
 from app.events.service import emit_event
@@ -16,6 +16,9 @@ router = APIRouter(prefix="/mock-target", tags=["mock-target"])
 
 @router.post("/migrations/{batch_id}/push-valid", response_model=list[PushResult])
 def push_valid(batch_id: str, db: Session = Depends(get_db)) -> list[PushResult]:
+    workflow = db.get(WorkflowStateRow, batch_id)
+    if workflow is None or workflow.status != "COMPLETED":
+        raise HTTPException(409, "Resolve all review items before pushing records")
     rows = db.scalars(
         select(TransformedRecordRow).where(
             TransformedRecordRow.batch_id == batch_id,

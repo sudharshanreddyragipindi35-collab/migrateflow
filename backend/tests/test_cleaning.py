@@ -42,6 +42,7 @@ def test_exact_duplicates_merge_and_conflicts_are_not_overwritten() -> None:
     assert result.records[0]["_sources"] == ["a.csv", "b.csv"]
     conflict = reconcile_records(exact[:1] + [{"employee_id": "E1", "email": "other@example.test", "_source": "c.csv"}])
     assert conflict.probable_conflicts
+    assert len(conflict.records) == 2
     assert conflict.records[0]["email"] == "a@example.test"
 
 
@@ -49,4 +50,3 @@ def test_missing_required_values_remain_explicit_failures() -> None:
     preview = clean_record("employees.csv", "3", {"ID": "E3"}, FULL_MAPPING)
     assert preview.status == "ESCALATION"
     assert any("email" in item for item in preview.errors)
-

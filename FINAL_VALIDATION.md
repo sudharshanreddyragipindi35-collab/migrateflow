@@ -19,7 +19,7 @@ GO for repository submission. The remaining recording and screenshot capture are
 |---|---|---|
 | Backend lint | `python -m ruff check app tests` | PASS |
 | Backend types | `python -m mypy app` | PASS, 42 source files |
-| Backend tests | `python -m pytest -q` | PASS, 33 tests |
+| Backend tests | `python -m pytest -q` | PASS, 33 tests, including production-path multi-file reconciliation and record correction |
 | Frontend lint | `npm run lint` | PASS |
 | Frontend tests | `npm test` | PASS, 3 tests |
 | Frontend build | `npm run build` | PASS |
@@ -34,8 +34,10 @@ GO for repository submission. The remaining recording and screenshot capture are
 ## Requirement evidence
 
 - Multi-file CSV/XLSX profiling and masked samples: `backend/app/ingestion/` and `backend/tests/test_ingestion.py`
+- Cross-file exact-duplicate merge, conflict preservation, and source provenance: `backend/app/api/records.py`, `backend/app/cleaning/service.py`, and `backend/tests/test_end_to_end.py`
 - Structured mapping and inspectable scoring: `backend/app/mapping/` and `backend/tests/test_mapping.py`
 - Durable supervised pause and resume: `backend/app/agent/` and `backend/tests/test_workflow.py`
+- Mapping and record-level review with approve/correct/reject boundaries: `backend/app/agent/service.py` and `frontend/src/pages/ReviewQueue.tsx`
 - Deterministic cleaning, validation, and reconciliation: `backend/app/cleaning/`, `backend/app/validation/`, and `backend/tests/test_cleaning.py`
 - Idempotent push, retry, and batch rollback: `backend/app/integration/` and `backend/tests/test_integration.py`
 - Complete supervised scenario: `backend/tests/test_end_to_end.py`

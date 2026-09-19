@@ -86,11 +86,18 @@ def reconcile_records(records: list[dict[str, Any]]) -> ReconciliationResult:
         }
         if differing:
             conflicts.append({"identity": key, "conflicts": differing, "records": [current, record]})
+            clone = dict(record)
+            clone.setdefault("_sources", []).append(record.get("_source", "unknown"))
+            index[f"{key}:conflict:{len(merged)}"] = clone
+            merged.append(clone)
             continue
         for field, value in record.items():
             if not field.startswith("_") and current.get(field) in (None, ""):
                 current[field] = value
         current.setdefault("_sources", []).append(record.get("_source", "unknown"))
+        if "_source_records" in record:
+            current.setdefault("_source_records", []).extend(record["_source_records"])
+        if "_provenance" in record:
+            current.setdefault("_provenance", []).extend(record["_provenance"])
         exact_merges += 1
     return ReconciliationResult(records=merged, exact_merges=exact_merges, probable_conflicts=conflicts)
-

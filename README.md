@@ -58,6 +58,8 @@ Run every quality gate:
 
 MigrateFlow uses the open-source `qwen2.5:7b-instruct` model by default.
 
+Use this Ollama path for the submitted Darwinbox walkthrough because the assignment explicitly asks for an open-source model. The Anthropic adapter is retained as an optional enterprise/provider-abstraction demonstration, not as the recommended submission mode.
+
 ```powershell
 ollama pull qwen2.5:7b-instruct
 ollama serve
@@ -105,9 +107,10 @@ Copy `.env.example` to `.env`. Important settings include:
 1. Run `python scripts/demo_seed.py` to verify the three safe sample inputs.
 2. Upload all files from `sample_data/` except `malformed.csv`.
 3. Generate proposals in fallback mode if Ollama is not running.
-4. Start the workflow. Review the single ambiguous `start_date` decision and approve or correct it.
-5. Transform and inspect records, push valid rows, retry the deliberate demo failure, and review the audit export.
-6. Roll back the batch and confirm unrelated target rows remain.
+4. Start the workflow. Review the ambiguous `start_date` mapping and approve or correct it.
+5. Let the agent reconcile the overlapping `IN001` row automatically, then resolve the record-level validation cards for the ambiguous date, missing date, and typed identifier.
+6. Inspect the reconciled preview, push only valid rows, retry the deliberate demo failure, and review the audit export.
+7. Roll back the batch and confirm unrelated target rows remain.
 
 The timed narration and screen sequence are in `DEMO_SCRIPT.md`.
 
@@ -139,6 +142,7 @@ The application keeps deterministic parsing, scoring, policy, validation, retrie
 - [Scalability and capacity plan](docs/SCALABILITY_AND_CAPACITY.md)
 - [GenAI engineering design](docs/GENAI_ENGINEERING.md)
 - [Autonomy policy](docs/AUTONOMY_POLICY.md)
+- [Assignment acceptance validation](docs/ASSIGNMENT_VALIDATION.md)
 
 For a single-host scale demonstration, set the required secrets outside source control and run `docker compose -f docker-compose.production.yml up --build --scale backend=4`. The Nginx edge listens on `http://localhost:8080`.
 
@@ -160,7 +164,7 @@ Do not commit `.env`, databases, uploads, raw client data, or secrets. Model inp
 - Frontend cannot reach the API: confirm `VITE_API_BASE_URL` and `CORS_ORIGINS` agree.
 - Docker backend is unhealthy: inspect `docker compose logs backend` and confirm the data volume is writable.
 - Upload rejected: use only nonempty `.csv` or `.xlsx` files within configured count and size limits.
-- A record does not push: resolve all mapping decisions and inspect validation errors in Data Preview.
+- A record does not push: resolve all mapping and record-level decisions in Review Queue, then inspect validation evidence in Data Preview.
 
 ## Known limitations
 

@@ -10,15 +10,15 @@ Drag in `employees_india.csv`, `employee_master.xlsx`, and `new_joiners.csv` tog
 
 ## 1:05 to 1:45 Automatic mapping and pause
 
-Generate mapping proposals using Ollama or the labelled deterministic fallback. Start the workflow. Show obvious aliases such as Employee ID, Work Email, and Department applying automatically. Pause on the one genuine ambiguity: `start_date` includes a day/month form that cannot be interpreted safely. Highlight the yellow paused banner and event timeline.
+Generate mapping proposals with the local open-source Ollama model. Start the workflow. Show obvious aliases such as Employee ID, Work Email, and Department applying automatically. Pause on the genuine mapping ambiguity around `start_date`. Highlight the yellow paused banner and event timeline.
 
 ## 1:45 to 2:30 Human correction and resume
 
-Open Review Queue. Show masked context, recommendation, alternatives, confidence components, and the reason code. Select `hire_date`, choose Correct, and submit. Return to Live Run and show that the same batch thread resumed and completed. Mention that a repeated decision is rejected safely and every human action is audited.
+Open Review Queue. Show masked context, recommendation, alternatives, confidence components, and the reason code. Select `hire_date`, choose Correct, and submit. The agent then transforms and reconciles the files. Point out that the overlapping `IN001` source rows merged automatically while invalid record fields returned to the same queue. Correct `employee_id` from `202` to `EM202`, and explain why invalid values cannot simply be approved.
 
 ## 2:30 to 3:15 Cleanup and validation
 
-Open Data Preview. Filter between Valid and Escalation. Compare original and transformed values, including trimmed text and lowercased email. Point out field provenance and the record whose ambiguous date remains unchanged instead of being guessed. Explain that missing required values remain explicit failures.
+Resolve or reject the remaining record cases, then open Data Preview. Filter between Valid and Rejected. Compare original and transformed values, including trimmed text and lowercased email. Show the reconciled `IN001` record with both source filenames and point out field-level provenance. Explain that ambiguous or missing required values were never guessed.
 
 ## 3:15 to 4:05 Push retry and rollback
 
@@ -27,4 +27,3 @@ Open Integration Audit. Push valid records with demo failures enabled. Show the 
 ## 4:05 to 4:30 Evidence and close
 
 Open `/docs` briefly to show the API contract. Finish with the implementation checklist and final validation report: backend and frontend quality gates, supervised end-to-end test, Docker health check, PII and injection tests, and evaluation metrics.
-

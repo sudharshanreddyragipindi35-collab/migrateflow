@@ -1,3 +1,4 @@
+import hashlib
 import json
 from datetime import datetime, timezone
 from uuid import uuid4
@@ -8,9 +9,16 @@ from sqlalchemy.orm import Session
 
 from app.agent.models import Escalation, EscalationAction, EscalationDecision, WorkflowStatus
 from app.agent.policy import evaluate_mapping
-from app.db.tables import AuditEventRow, EscalationRow, MappingProposalRow, WorkflowStateRow
+from app.db.tables import (
+    AuditEventRow,
+    EscalationRow,
+    MappingProposalRow,
+    TransformedRecordRow,
+    WorkflowStateRow,
+)
 from app.mapping.models import MappingProposal
 from app.mapping.schema import load_target_schema
+from app.validation.employee import validation_errors
 
 
 def _audit(db: Session, batch_id: str, actor_type: str, actor_id: str, action: str, entity_type: str, entity_id: str, details: dict) -> None:
@@ -98,9 +106,120 @@ def escalation_model(row: EscalationRow) -> Escalation:
     )
 
 
+def _payload_hash(payload: dict) -> str:
+    value = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
+    return hashlib.sha256(value.encode()).hexdigest()
+
+
+def _resolve_record_escalation(
+    db: Session,
+    row: EscalationRow,
+    decision: EscalationDecision,
+    context: dict,
+) -> WorkflowStatus:
+    record = db.get(TransformedRecordRow, context.get("record_id"))
+    if record is None or record.batch_id != row.batch_id:
+        raise HTTPException(404, "Escalated record not found")
+    workflow = db.get(WorkflowStateRow, row.batch_id)
+    if workflow is None:
+        raise HTTPException(409, "Workflow state is missing")
+
+    before = json.loads(record.transformed_json)
+    after = dict(before)
+    field = str(context.get("field", ""))
+    if decision.action == EscalationAction.CORRECT:
+        after[field] = decision.corrected_value
+        errors = validation_errors(after)
+        field_errors = [error for error in errors if error.startswith(f"{field}:")]
+        if field_errors:
+            raise HTTPException(422, field_errors[0])
+        provenance = json.loads(record.provenance_json)
+        provenance.append(
+            {
+                "field": field,
+                "original_value": before.get(field),
+                "new_value": decision.corrected_value,
+                "rule": "human_correction",
+                "confidence": 1.0,
+                "actor": decision.actor,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "reason": row.reason_code,
+            }
+        )
+        record.provenance_json = json.dumps(provenance, default=str)
+        record.transformed_json = json.dumps(after, default=str)
+        record.errors_json = json.dumps(errors)
+        record.status = "ESCALATION" if errors else "VALID"
+    elif decision.action == EscalationAction.APPROVE:
+        errors = validation_errors(after)
+        if errors:
+            raise HTTPException(422, "Invalid record cannot be approved; correct or reject it")
+        record.errors_json = "[]"
+        record.status = "VALID"
+    else:
+        record.status = "REJECTED"
+        record.errors_json = json.dumps([f"Rejected by {decision.actor}: {row.reason_code}"])
+
+    row.status = "RESOLVED"
+    row.decision_json = decision.model_dump_json()
+    row.actor = decision.actor
+    row.resolved_at = datetime.now(timezone.utc)
+    if decision.action == EscalationAction.REJECT:
+        siblings = db.scalars(
+            select(EscalationRow).where(
+                EscalationRow.batch_id == row.batch_id,
+                EscalationRow.status == "OPEN",
+                EscalationRow.id != row.id,
+            )
+        ).all()
+        for sibling in siblings:
+            sibling_context = json.loads(sibling.source_context_json)
+            if sibling_context.get("record_id") == record.id:
+                sibling.status = "RESOLVED"
+                sibling.decision_json = decision.model_dump_json()
+                sibling.actor = decision.actor
+                sibling.resolved_at = row.resolved_at
+
+    remaining = len(
+        db.scalars(
+            select(EscalationRow).where(
+                EscalationRow.batch_id == row.batch_id,
+                EscalationRow.status == "OPEN",
+                EscalationRow.id != row.id,
+            )
+        ).all()
+    )
+    workflow.status = "PAUSED" if remaining else "COMPLETED"
+    _audit(
+        db,
+        row.batch_id,
+        "HUMAN",
+        decision.actor,
+        "record_escalation.resolved",
+        "record",
+        record.id,
+        {
+            "action": decision.action.value,
+            "field": field,
+            "before_hash_or_masked": _payload_hash(before),
+            "after_hash_or_masked": _payload_hash(after),
+            "reason_code": row.reason_code,
+        },
+    )
+    db.commit()
+    db.refresh(workflow)
+    return _status(workflow, remaining)
+
+
 def resolve_escalation(db: Session, row: EscalationRow, decision: EscalationDecision) -> WorkflowStatus:
     if row.status != "OPEN":
         raise HTTPException(409, "Escalation has already been resolved")
+    allowed_actions = set(json.loads(row.allowed_actions_json))
+    if decision.action.value not in allowed_actions:
+        raise HTTPException(422, f"{decision.action.value} is not allowed for this escalation")
+    context = json.loads(row.source_context_json)
+    if str(context.get("kind", "")).startswith("record_"):
+        return _resolve_record_escalation(db, row, decision, context)
     target_fields = {item.name for item in load_target_schema().fields}
     selected = row.suggestion
     if decision.action == EscalationAction.CORRECT:
@@ -115,7 +234,7 @@ def resolve_escalation(db: Session, row: EscalationRow, decision: EscalationDeci
     if workflow is None:
         raise HTTPException(409, "Workflow state is missing")
     state = json.loads(workflow.state_json)
-    key = f"{json.loads(row.source_context_json)['source_file']}:{json.loads(row.source_context_json)['source_column']}"
+    key = f"{context['source_file']}:{context['source_column']}"
     if decision.action in {EscalationAction.APPROVE, EscalationAction.CORRECT} and selected:
         state.setdefault("applied_mappings", {})[key] = selected
     else:
@@ -139,4 +258,3 @@ def resolve_escalation(db: Session, row: EscalationRow, decision: EscalationDeci
     db.commit()
     db.refresh(workflow)
     return _status(workflow, remaining)
-

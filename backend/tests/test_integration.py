@@ -6,7 +6,7 @@ from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
 from app.db.database import SessionLocal
-from app.db.tables import TargetWriteRow, TransformedRecordRow
+from app.db.tables import TargetWriteRow, TransformedRecordRow, WorkflowStateRow
 from app.integration.models import PushRequest, PushStatus
 from app.integration.service import payload_hash, push_record, retry_batch, rollback_batch
 from app.main import app
@@ -81,6 +81,8 @@ def test_rollback_is_batch_scoped() -> None:
 def test_bulk_push_endpoint_is_idempotent_and_skips_invalid_records() -> None:
     batch = str(uuid4())
     with SessionLocal() as db:
+        db.add(WorkflowStateRow(batch_id=batch, thread_id=batch, status="COMPLETED", state_json="{}"))
+        db.commit()
         valid, _ = staged(db, batch, "bulk@example.test")
         staged(db, batch, "invalid", status="ESCALATION")
         source_record_id = valid.source_record_id

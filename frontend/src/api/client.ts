@@ -5,6 +5,7 @@ export const api = {
   upload(files: File[]) { const body = new FormData(); files.forEach((file) => body.append("files", file)); return request<{ batch_id: string }>("/api/batches", { method: "POST", body }); },
   propose: (batchId: string) => request(`/api/batches/${batchId}/mapping-proposals`, { method: "POST" }),
   start: (batchId: string) => request<WorkflowStatus>(`/api/batches/${batchId}/workflow/start`, { method: "POST" }),
+  status: (batchId: string) => request<WorkflowStatus>(`/api/batches/${batchId}/workflow/status`),
   transform: (batchId: string) => request<RecordPreview[]>(`/api/batches/${batchId}/records/transform`, { method: "POST" }),
   escalations: (batchId: string) => request<Escalation[]>(`/api/batches/${batchId}/escalations`),
   resolve(id: string, action: string, correctedValue?: string) { return request<WorkflowStatus>(`/api/escalations/${id}/resolve`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, corrected_value: correctedValue, actor: "consultant" }) }); },
