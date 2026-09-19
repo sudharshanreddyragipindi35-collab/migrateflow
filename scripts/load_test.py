@@ -26,36 +26,65 @@ def percentile(values: list[float], percent: float) -> float:
     return ordered[index]
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser(description="Bounded read-only MigrateFlow load smoke test")
-    parser.add_argument("--base-url", default="http://localhost:8000")
-    parser.add_argument("--path", default="/health")
-    parser.add_argument("--users", type=int, default=25)
-    parser.add_argument("--requests-per-user", type=int, default=5)
-    parser.add_argument("--timeout", type=float, default=10.0)
-    parser.add_argument("--max-error-rate", type=float, default=0.01)
-    parser.add_argument("--max-p95-ms", type=float, default=750.0)
-    args = parser.parse_args()
-    if not 1 <= args.users <= 10_000 or not 1 <= args.requests_per_user <= 1_000:
-        parser.error("users must be 1..10000 and requests-per-user must be 1..1000")
-
-    url = f"{args.base_url.rstrip('/')}/{args.path.lstrip('/')}"
-    total = args.users * args.requests_per_user
+def run_phase(url: str, users: int, requests_per_user: int, timeout: float) -> dict[str, float | int]:
+    total = users * requests_per_user
     started = time.perf_counter()
-    with ThreadPoolExecutor(max_workers=args.users) as pool:
-        futures = [pool.submit(one_request, url, args.timeout) for _ in range(total)]
+    with ThreadPoolExecutor(max_workers=users) as pool:
+        futures = [pool.submit(one_request, url, timeout) for _ in range(total)]
         results = [future.result() for future in as_completed(futures)]
     elapsed = time.perf_counter() - started
     latencies = [latency for latency, _ in results]
     failures = sum(not ok for _, ok in results)
-    error_rate = failures / total
-    p95 = percentile(latencies, 0.95)
+    return {
+        "requests": total,
+        "users": users,
+        "rps": total / elapsed,
+        "mean_ms": statistics.fmean(latencies),
+        "p95_ms": percentile(latencies, 0.95),
+        "errors": failures,
+        "error_rate": failures / total,
+    }
+
+
+def print_phase(name: str, result: dict[str, float | int]) -> None:
     print(
-        f"requests={total} users={args.users} rps={total / elapsed:.2f} "
-        f"mean_ms={statistics.fmean(latencies):.2f} p95_ms={p95:.2f} "
-        f"errors={failures} error_rate={error_rate:.4f}"
+        f"phase={name} requests={result['requests']} users={result['users']} "
+        f"rps={result['rps']:.2f} mean_ms={result['mean_ms']:.2f} "
+        f"p95_ms={result['p95_ms']:.2f} errors={result['errors']} "
+        f"error_rate={result['error_rate']:.4f}"
     )
-    return int(error_rate > args.max_error_rate or p95 > args.max_p95_ms)
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Bounded read-only MigrateFlow load and spike test")
+    parser.add_argument("--base-url", default="http://localhost:8000")
+    parser.add_argument("--path", default="/health")
+    parser.add_argument("--users", type=int, default=25)
+    parser.add_argument("--requests-per-user", type=int, default=5)
+    parser.add_argument("--pattern", choices=["steady", "spike"], default="steady")
+    parser.add_argument("--baseline-users", type=int, default=5)
+    parser.add_argument("--baseline-requests-per-user", type=int, default=2)
+    parser.add_argument("--timeout", type=float, default=10.0)
+    parser.add_argument("--max-error-rate", type=float, default=0.01)
+    parser.add_argument("--max-p95-ms", type=float, default=750.0)
+    args = parser.parse_args()
+    values = [args.users, args.baseline_users]
+    request_values = [args.requests_per_user, args.baseline_requests_per_user]
+    if any(not 1 <= value <= 10_000 for value in values) or any(
+        not 1 <= value <= 1_000 for value in request_values
+    ):
+        parser.error("user counts must be 1..10000 and requests-per-user must be 1..1000")
+
+    url = f"{args.base_url.rstrip('/')}/{args.path.lstrip('/')}"
+    if args.pattern == "spike":
+        baseline = run_phase(url, args.baseline_users, args.baseline_requests_per_user, args.timeout)
+        print_phase("baseline", baseline)
+    result = run_phase(url, args.users, args.requests_per_user, args.timeout)
+    print_phase(args.pattern, result)
+    return int(
+        float(result["error_rate"]) > args.max_error_rate
+        or float(result["p95_ms"]) > args.max_p95_ms
+    )
 
 
 if __name__ == "__main__":

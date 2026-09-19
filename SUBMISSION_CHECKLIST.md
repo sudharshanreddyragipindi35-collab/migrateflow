@@ -12,5 +12,6 @@
 - [x] Backend formatting, lint, type, test, and end-to-end gates passed
 - [x] Frontend lint, type, component test, and production build gates passed
 - [x] Retry, idempotency conflict, and batch-scoped rollback tested
+- [x] Transactional fallback and live-Ollama smoke tests passed
+- [x] Bounded abrupt-concurrency spike test passed
 - [x] Final results and known limitations documented in `FINAL_VALIDATION.md`
-

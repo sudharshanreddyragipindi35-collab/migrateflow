@@ -32,6 +32,9 @@ GO for repository submission. The remaining recording and screenshot capture are
 | Anthropic mapping smoke | `POST /api/batches/{id}/mapping-proposals` | PASS, 4 proposals from `anthropic`; all 4 routed to human review |
 | Ollama structured mapping smoke | `OllamaMappingAdapter.propose(...)` | PASS, `qwen2.5:7b-instruct` returned a schema-valid `email` mapping |
 | Docker-to-Ollama connectivity | `GET host.docker.internal:11434/api/tags` from backend container | PASS, configured model visible |
+| Transactional smoke | `python scripts/smoke_test.py` | PASS, upload through push and compensating rollback |
+| Live Ollama smoke | `python scripts/smoke_test.py --live-model --timeout 300` | PASS, 7 structured proposals, 1 valid record, push and rollback |
+| Abrupt spike | `python scripts/load_test.py --pattern spike --baseline-users 10 --users 200 --requests-per-user 5` | PASS, 1,000 spike requests, 0 errors, p95 616.54 ms |
 
 ## Requirement evidence
 

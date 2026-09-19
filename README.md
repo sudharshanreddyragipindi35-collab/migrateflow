@@ -56,6 +56,15 @@ Run every quality gate:
 ./scripts/test.ps1
 ```
 
+With the Docker stack running, execute the transactional runtime smoke test and a bounded read-only spike test:
+
+```powershell
+python scripts/smoke_test.py
+python scripts/load_test.py --pattern spike --baseline-users 5 --users 100 --requests-per-user 5
+```
+
+Add `--live-model` to the smoke command only when you intentionally want to exercise every mapping call through the configured LLM; the default smoke path stays fast and does not consume a hosted-provider quota.
+
 ## Ollama model setup
 
 MigrateFlow uses the open-source `qwen2.5:7b-instruct` model by default.
@@ -144,6 +153,7 @@ The application keeps deterministic parsing, scoring, policy, validation, retrie
 - [Low-level design](docs/LOW_LEVEL_DESIGN.md)
 - [Scalability and capacity plan](docs/SCALABILITY_AND_CAPACITY.md)
 - [GenAI engineering design](docs/GENAI_ENGINEERING.md)
+- [FDE capability matrix](docs/FDE_CAPABILITY_MATRIX.md)
 - [Autonomy policy](docs/AUTONOMY_POLICY.md)
 - [Assignment acceptance validation](docs/ASSIGNMENT_VALIDATION.md)
 

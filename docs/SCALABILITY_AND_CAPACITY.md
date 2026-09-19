@@ -43,6 +43,14 @@ The safe default command exercises only `GET /health`:
 python scripts/load_test.py --base-url http://localhost:8080 --users 200 --requests-per-user 20
 ```
 
+The spike profile establishes a small baseline and then applies an abrupt concurrency jump:
+
+```powershell
+python scripts/load_test.py --base-url http://localhost:8080 --pattern spike --baseline-users 10 --users 200 --requests-per-user 5
+```
+
+This client-side test is a bounded release signal, not a substitute for distributed load generation, server-side saturation metrics, or an isolated production-scale environment.
+
 Run large tests only in an isolated performance environment with synthetic data and provider spend limits. A release passes when non-model p95 is below 750 ms, server errors stay below 1 percent, database saturation stays below its alert threshold, accepted jobs are not lost, SSE can resume, and batch rollback remains isolated. Also test API replica termination, database failover, queue redelivery, Anthropic 429 and 529 responses, target timeouts, and object-store errors.
 
 ## Scale-compose demonstration
