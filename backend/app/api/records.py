@@ -9,6 +9,7 @@ from app.cleaning.service import clean_record
 from app.db.database import get_db
 from app.db.tables import SourceFileProfileRow, TransformedRecordRow, WorkflowStateRow
 from app.ingestion.profiler import read_source
+from app.events.service import emit_event
 
 router = APIRouter(prefix="/api/batches", tags=["records"])
 
@@ -39,6 +40,7 @@ def transform(batch_id: str, db: Session = Depends(get_db)) -> list[RecordPrevie
                     status=preview.status, errors_json=json.dumps(preview.errors), attempt_count=preview.attempt_count,
                 )
             )
+            emit_event(db, batch_id, "record_validated", {"record_id": preview.record_id, "status": preview.status})
     db.commit()
     return previews
 
@@ -55,4 +57,3 @@ def previews(batch_id: str, db: Session = Depends(get_db)) -> list[RecordPreview
         )
         for row in rows
     ]
-

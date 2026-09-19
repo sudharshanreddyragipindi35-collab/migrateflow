@@ -108,3 +108,14 @@ class TargetWriteRow(Base):
     status: Mapped[str] = mapped_column(String(32))
     retry_count: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+
+
+class WorkflowEventRow(Base):
+    __tablename__ = "workflow_events"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    batch_id: Mapped[str] = mapped_column(String(36), index=True)
+    level: Mapped[str] = mapped_column(String(16), default="INFO")
+    event_type: Mapped[str] = mapped_column(String(64))
+    payload_json: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)

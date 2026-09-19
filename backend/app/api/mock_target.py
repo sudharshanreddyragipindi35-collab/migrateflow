@@ -7,13 +7,17 @@ from app.db.database import get_db
 from app.db.tables import TargetWriteRow
 from app.integration.models import PushRequest, PushResult
 from app.integration.service import push_record, retry_batch, rollback_batch
+from app.events.service import emit_event
 
 router = APIRouter(prefix="/mock-target", tags=["mock-target"])
 
 
 @router.post("/employees", response_model=PushResult)
 def push(request: PushRequest, db: Session = Depends(get_db)) -> PushResult:
-    return push_record(db, request, demo_failures=get_settings().demo_failures)
+    result = push_record(db, request, demo_failures=get_settings().demo_failures)
+    emit_event(db, request.batch_id, "push_result", {"source_record_id": result.source_record_id, "status": result.status.value})
+    db.commit()
+    return result
 
 
 @router.get("/migrations/{batch_id}", response_model=list[PushResult])
@@ -31,10 +35,16 @@ def migration(batch_id: str, db: Session = Depends(get_db)) -> list[PushResult]:
 
 @router.post("/migrations/{batch_id}/retry", response_model=list[PushResult])
 def retry(batch_id: str, db: Session = Depends(get_db)) -> list[PushResult]:
-    return retry_batch(db, batch_id)
+    results = retry_batch(db, batch_id)
+    for item in results:
+        emit_event(db, batch_id, "push_result", {"source_record_id": item.source_record_id, "status": item.status.value, "retry_count": item.retry_count})
+    db.commit()
+    return results
 
 
 @router.delete("/migrations/{batch_id}")
 def rollback(batch_id: str, db: Session = Depends(get_db)) -> dict[str, int | str]:
-    return {"batch_id": batch_id, "rolled_back": rollback_batch(db, batch_id)}
-
+    count = rollback_batch(db, batch_id)
+    emit_event(db, batch_id, "rollback", {"rolled_back": count})
+    db.commit()
+    return {"batch_id": batch_id, "rolled_back": count}

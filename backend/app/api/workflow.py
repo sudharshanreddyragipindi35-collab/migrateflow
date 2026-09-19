@@ -6,13 +6,19 @@ from app.agent.models import Escalation, EscalationDecision, WorkflowStatus
 from app.agent.service import escalation_model, resolve_escalation, start_workflow
 from app.db.database import get_db
 from app.db.tables import EscalationRow, WorkflowStateRow
+from app.events.service import emit_event
 
 router = APIRouter(prefix="/api", tags=["workflow"])
 
 
 @router.post("/batches/{batch_id}/workflow/start", response_model=WorkflowStatus)
 def start(batch_id: str, db: Session = Depends(get_db)) -> WorkflowStatus:
-    return start_workflow(db, batch_id)
+    emit_event(db, batch_id, "node_started", {"node": "mapping_policy"})
+    result = start_workflow(db, batch_id)
+    emit_event(db, batch_id, "node_completed", {"node": "mapping_policy"})
+    emit_event(db, batch_id, "workflow_paused" if result.status == "PAUSED" else "progress", {"status": result.status})
+    db.commit()
+    return result
 
 
 @router.get("/batches/{batch_id}/workflow/status", response_model=WorkflowStatus)
@@ -36,5 +42,8 @@ def resolve(escalation_id: str, decision: EscalationDecision, db: Session = Depe
     row = db.get(EscalationRow, escalation_id)
     if row is None:
         raise HTTPException(404, "Escalation not found")
-    return resolve_escalation(db, row, decision)
-
+    batch_id = row.batch_id
+    result = resolve_escalation(db, row, decision)
+    emit_event(db, batch_id, "workflow_resumed", {"status": result.status, "action": decision.action.value})
+    db.commit()
+    return result

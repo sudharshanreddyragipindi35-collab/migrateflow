@@ -10,7 +10,7 @@ Status values are `PASS`, `FAIL`, `BLOCKED`, or `PENDING`. Every `PASS` requires
 | 3 | Autonomy policy and human interrupt | PASS | `pytest`: 15 passed; SQLite-checkpointed StateGraph, policy gates, durable pause/correct/resume, duplicate resolution, and audit coverage. |
 | 4 | Cleaning reconciliation and validation | PASS | `pytest`: 19 passed; deterministic provenance, ambiguous dates, required failures, exact merge, conflicts, immutable originals, and two-attempt escalation covered. |
 | 5 | Mock target integration | PASS | `pytest`: 22 passed; per-record persistence, retryable/permanent states, idempotent replay/conflict, approved-only push, and batch rollback covered. |
-| 6 | Backend APIs events and persistence | PENDING | |
+| 6 | Backend APIs events and persistence | PASS | `pytest`: 25 passed; OpenAPI contract, ordered typed SSE snapshot/reconnect, error envelope, and durable state covered. |
 | 7 | Consultant user interface | PENDING | |
 | 8 | Security observability and evaluation | PENDING | |
 | 9 | End to end hardening | PENDING | |
@@ -67,3 +67,11 @@ Detailed acceptance evidence is added under a heading for each completed level a
 - Results: 22 passed
 - Evidence: `backend/app/integration/service.py`, `backend/app/api/mock_target.py`, `backend/tests/test_integration.py`
 - Residual risk: deterministic demo failures are disabled by default and intended only for the recorded demonstration path.
+
+## Level 6 Backend APIs events and persistence
+
+- Status: PASS
+- Commands: `python -m pytest -q`
+- Results: 25 passed
+- Evidence: `backend/app/api/events.py`, `backend/app/events/service.py`, `backend/app/main.py`, `backend/tests/test_api_contract.py`
+- Residual risk: the prototype uses an idempotent schema-version initializer; production deployment should promote the documented Alembic migration path.
