@@ -78,6 +78,8 @@ ollama serve
 
 Set `MODEL_MODE=ollama` for live structured proposals. Set `MODEL_MODE=fallback` to use the clearly labelled deterministic mapping fallback. If Ollama is selected but unavailable, the API returns an explicit 503 instead of imitating model output.
 
+Live semantic proposals are batched once per source file rather than once per column. A local 7B model can still take one to three minutes on CPU-heavy hardware; use fallback mode for a fast UI walkthrough and Ollama mode for the final open-source-model demonstration.
+
 ## Anthropic model setup
 
 The Anthropic adapter uses the same minimized, masked context and structured `ModelMapping` contract as Ollama. Keep the committed placeholder empty, then set these values only in your untracked `.env`:

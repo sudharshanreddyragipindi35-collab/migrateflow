@@ -5,6 +5,7 @@
 MigrateFlow uses generative AI only for semantic schema suggestions. The advanced engineering is in control of the model, not in maximizing model autonomy.
 
 - Provider abstraction supports private Ollama and Anthropic without changing policy logic.
+- Semantic proposals are batched once per source file, reducing model round trips while validating response count and preserving deterministic per-column scoring.
 - Pydantic structured output rejects malformed proposals.
 - Data minimization sends masked, bounded column profiles instead of raw employee rows.
 - Prompt-injection filtering redacts instruction-like file names, column names, and samples and tells the model to treat context as data.

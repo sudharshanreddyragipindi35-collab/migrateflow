@@ -32,6 +32,10 @@ class ModelMapping(BaseModel):
     warnings: list[str] = []
 
 
+class ModelMappingBatch(BaseModel):
+    mappings: list[ModelMapping]
+
+
 class MappingProposal(BaseModel):
     source_file: str
     source_column: str
@@ -50,4 +54,3 @@ class MappingProposal(BaseModel):
         if self.target_field is None and not self.requires_human:
             raise ValueError("Unmapped proposals require human review")
         return self
-

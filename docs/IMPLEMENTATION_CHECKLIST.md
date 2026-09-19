@@ -18,6 +18,8 @@ Status values are `PASS`, `FAIL`, `BLOCKED`, or `PENDING`. Every `PASS` requires
 | 15 | Ollama local and Docker runtime | PASS | Live structured output passed with `qwen2.5:7b-instruct`; rebuilt backend container reached host Ollama through the Docker host gateway. |
 | 16 | Model runtime transparency | PASS | Safe runtime endpoint and UI provider/model/readiness label; 34 backend tests, 4 frontend tests, lint, types, build, and evaluation passed. |
 | 17 | FDE alignment and runtime performance gates | PASS | Capability matrix documents implemented versus deliberately excluded concepts; transactional fallback and live-Ollama smoke tests plus an abrupt 200-user/1,000-request spike passed. |
+| 18 | Safe record correction UX | PASS | Required dates use a native date picker with ISO guidance and an explicit reject-instead-of-guessing boundary; 5 frontend tests pass. |
+| 19 | Batched semantic mapping | PASS | Ollama and Anthropic use one structured request per source file; strict count validation, prompt-safety tests, 36 backend tests, and a live Ollama end-to-end smoke pass. |
 
 ## Level evidence
 

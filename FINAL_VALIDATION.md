@@ -19,9 +19,9 @@ GO for repository submission. The remaining recording and screenshot capture are
 |---|---|---|
 | Backend lint | `python -m ruff check app tests` | PASS |
 | Backend types | `python -m mypy app` | PASS, 43 source files |
-| Backend tests | `python -m pytest -q` | PASS, 34 tests, including production-path multi-file reconciliation, record correction, and safe model-runtime reporting |
+| Backend tests | `python -m pytest -q` | PASS, 36 tests, including production-path multi-file reconciliation, batched model mapping, record correction, and safe model-runtime reporting |
 | Frontend lint | `npm run lint` | PASS |
-| Frontend tests | `npm test` | PASS, 4 tests |
+| Frontend tests | `npm test` | PASS, 5 tests |
 | Frontend build | `npm run build` | PASS |
 | Evaluation | `python scripts/evaluate.py` | PASS, 6 cases and 8 metrics |
 | Container build | `docker compose up -d --build` | PASS |
@@ -34,6 +34,7 @@ GO for repository submission. The remaining recording and screenshot capture are
 | Docker-to-Ollama connectivity | `GET host.docker.internal:11434/api/tags` from backend container | PASS, configured model visible |
 | Transactional smoke | `python scripts/smoke_test.py` | PASS, upload through push and compensating rollback |
 | Live Ollama smoke | `python scripts/smoke_test.py --live-model --timeout 300` | PASS, 7 structured proposals, 1 valid record, push and rollback |
+| Batched Ollama mapping | One structured request for a 7-column source file | PASS, all 7 mappings correct in 126.06 seconds versus roughly 4.5 minutes for sequential calls |
 | Abrupt spike | `python scripts/load_test.py --pattern spike --baseline-users 10 --users 200 --requests-per-user 5` | PASS, 1,000 spike requests, 0 errors, p95 616.54 ms |
 
 ## Requirement evidence
