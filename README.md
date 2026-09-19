@@ -83,7 +83,7 @@ Copy `.env.example` to `.env`. Important settings include:
 
 | Variable | Purpose | Default |
 |---|---|---|
-| `DATABASE_URL` | Durable SQLite location | `sqlite:///./migrateflow.db` |
+| `DATABASE_URL` | Durable local SQLite location | `sqlite:///./data/migrateflow.db` |
 | `UPLOAD_ROOT` | Private batch upload directory | `./uploads` |
 | `MAX_UPLOAD_FILES` | Per-batch file limit | `10` |
 | `MAX_UPLOAD_BYTES` | Per-file byte limit | `10485760` |

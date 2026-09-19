@@ -18,6 +18,7 @@ def test_openapi_contains_complete_workflow_contract() -> None:
         "/api/batches/{batch_id}/escalations", "/api/escalations/{escalation_id}/resolve",
         "/api/batches/{batch_id}/records", "/api/batches/{batch_id}/events",
         "/mock-target/employees", "/mock-target/migrations/{batch_id}/retry",
+        "/mock-target/migrations/{batch_id}/push-valid",
     }
     assert required <= set(paths)
 

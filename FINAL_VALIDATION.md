@@ -19,7 +19,7 @@ GO for repository submission. The remaining recording and screenshot capture are
 |---|---|---|
 | Backend lint | `python -m ruff check app tests` | PASS |
 | Backend types | `python -m mypy app` | PASS, 42 source files |
-| Backend tests | `python -m pytest -q` | PASS, 31 tests |
+| Backend tests | `python -m pytest -q` | PASS, 33 tests |
 | Frontend lint | `npm run lint` | PASS |
 | Frontend tests | `npm test` | PASS, 3 tests |
 | Frontend build | `npm run build` | PASS |
@@ -29,6 +29,7 @@ GO for repository submission. The remaining recording and screenshot capture are
 | Load smoke | `python scripts/load_test.py --base-url http://localhost:8080 --users 200 --requests-per-user 5 --max-p95-ms 1500` | PASS, 1,000 requests, 0 errors, p95 525.08 ms on this workstation |
 | Backend health | `GET http://localhost:8000/health` | PASS, `status=ok` |
 | Frontend health | `GET http://localhost:5173` | PASS, HTTP 200 |
+| Anthropic mapping smoke | `POST /api/batches/{id}/mapping-proposals` | PASS, 4 proposals from `anthropic`; all 4 routed to human review |
 
 ## Requirement evidence
 

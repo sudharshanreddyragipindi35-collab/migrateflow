@@ -8,9 +8,11 @@ from app.config import get_settings
 from app.db.database import get_db
 from app.db.tables import IngestionBatchRow, MappingProposalRow, SourceFileProfileRow
 from app.ingestion.models import SourceFileProfile
+from app.events.service import emit_event
 from app.mapping.engine import (
     AnthropicMappingAdapter,
     DeterministicFallback,
+    InvalidModelOutput,
     MappingModel,
     ModelUnavailable,
     OllamaMappingAdapter,
@@ -55,7 +57,14 @@ def create_mapping_proposals(
                 )
         except ModelUnavailable as exc:
             raise HTTPException(503, str(exc)) from exc
-    proposals = propose_mappings(_profiles(db, batch_id), load_target_schema(), adapter)
+    emit_event(db, batch_id, "node_started", {"node": "mapping_generation", "provider": adapter.provider})
+    db.commit()
+    try:
+        proposals = propose_mappings(_profiles(db, batch_id), load_target_schema(), adapter)
+    except (ModelUnavailable, InvalidModelOutput) as exc:
+        emit_event(db, batch_id, "workflow_failed", {"node": "mapping_generation", "message": str(exc)})
+        db.commit()
+        raise HTTPException(503 if isinstance(exc, ModelUnavailable) else 502, str(exc)) from exc
     db.execute(delete(MappingProposalRow).where(MappingProposalRow.batch_id == batch_id))
     for proposal in proposals:
         db.add(
@@ -66,6 +75,13 @@ def create_mapping_proposals(
                 proposal_json=proposal.model_dump_json(),
             )
         )
+    db.commit()
+    emit_event(
+        db,
+        batch_id,
+        "node_completed",
+        {"node": "mapping_generation", "proposal_count": len(proposals), "provider": adapter.provider},
+    )
     db.commit()
     return proposals
 

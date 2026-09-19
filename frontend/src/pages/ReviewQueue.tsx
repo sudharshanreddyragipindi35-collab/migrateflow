@@ -1,3 +1,33 @@
-import { useEffect, useState } from "react"; import { api } from "../api/client"; import type { Escalation } from "../types";
-export function ReviewQueue({ batchId }: { batchId: string }) { const [items, setItems] = useState<Escalation[]>([]); const [error, setError] = useState(""); const [correction, setCorrection] = useState<Record<string, string>>({}); useEffect(() => { if (batchId) api.escalations(batchId).then(setItems).catch((e) => setError(e.message)); }, [batchId]); async function decide(item: Escalation, action: string) { const value = correction[item.escalation_id]; if (action === "CORRECT" && !value) { setError("Choose a valid target field before correcting."); return; } try { await api.resolve(item.escalation_id, action, value); setItems((all) => all.filter((entry) => entry.escalation_id !== item.escalation_id)); } catch (reason) { setError(reason instanceof Error ? reason.message : "Decision failed"); } } if (!batchId || (!items.length && !error)) return <section><div className="section-heading"><div><p className="eyebrow">Supervision</p><h2>Review queue</h2></div></div><div className="empty"><h3>Nothing needs review</h3><p>Ambiguous mappings and record conflicts appear here.</p></div></section>; return <section><div className="section-heading"><div><p className="eyebrow">Supervision</p><h2>Review queue</h2></div><span>{items.length} open</span></div>{error && <p role="alert" className="error">{error}</p>}<div className="card-grid">{items.map((item) => <article className="review-card" key={item.escalation_id}><div className="card-top"><span>{item.source_context.source_file}</span><strong>{item.reason_code.replaceAll("_", " ")}</strong></div><h3>{item.source_context.source_column}</h3><p>Recommended target: <code>{item.suggestion ?? "Leave unmapped"}</code></p><div className="confidence">{Object.entries(item.confidence_evidence).map(([key, value]) => <label key={key}><span>{key.replaceAll("_", " ")}</span><progress max="1" value={value} /><small>{Math.round(value * 100)}%</small></label>)}</div><label>Correction<select value={correction[item.escalation_id] ?? ""} onChange={(event) => setCorrection({ ...correction, [item.escalation_id]: event.target.value })}><option value="">Select target field</option>{[item.suggestion, ...item.alternatives].filter(Boolean).map((value) => <option key={value!}>{value}</option>)}</select></label><div className="actions"><button onClick={() => decide(item, "REJECT")}>Reject</button><button onClick={() => decide(item, "CORRECT")}>Correct</button><button className="primary" onClick={() => decide(item, "APPROVE")}>Approve</button></div></article>)}</div></section>; }
+import { useEffect, useState } from "react";
+import { api } from "../api/client";
+import type { Escalation } from "../types";
 
+export function ReviewQueue({ batchId, onCompleted }: { batchId: string; onCompleted: () => void }) {
+  const [items, setItems] = useState<Escalation[]>([]);
+  const [error, setError] = useState("");
+  const [correction, setCorrection] = useState<Record<string, string>>({});
+  useEffect(() => {
+    if (batchId) api.escalations(batchId).then((all) => setItems(all.filter((item) => item.status === "OPEN"))).catch((reason) => setError(reason.message));
+  }, [batchId]);
+
+  async function decide(item: Escalation, action: string) {
+    const value = correction[item.escalation_id];
+    if (action === "CORRECT" && !value) {
+      setError("Choose a valid target field before correcting.");
+      return;
+    }
+    try {
+      const workflow = await api.resolve(item.escalation_id, action, value);
+      setItems((all) => all.filter((entry) => entry.escalation_id !== item.escalation_id));
+      if (workflow.status === "COMPLETED") {
+        await api.transform(batchId);
+        onCompleted();
+      }
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Decision failed");
+    }
+  }
+
+  if (!batchId || (!items.length && !error)) return <section><div className="section-heading"><div><p className="eyebrow">Supervision</p><h2>Review queue</h2></div></div><div className="empty"><h3>Nothing needs review</h3><p>Start mapping from Live run. Ambiguous mappings and record conflicts will appear here.</p></div></section>;
+  return <section><div className="section-heading"><div><p className="eyebrow">Supervision</p><h2>Review queue</h2></div><span>{items.length} open</span></div>{error && <p role="alert" className="error">{error}</p>}<div className="card-grid">{items.map((item) => <article className="review-card" key={item.escalation_id}><div className="card-top"><span>{item.source_context.source_file}</span><strong>{item.reason_code.replaceAll("_", " ")}</strong></div><h3>{item.source_context.source_column}</h3><p>Recommended target: <code>{item.suggestion ?? "Leave unmapped"}</code></p><div className="confidence">{Object.entries(item.confidence_evidence).map(([key, value]) => <label key={key}><span>{key.replaceAll("_", " ")}</span><progress max="1" value={value} /><small>{Math.round(value * 100)}%</small></label>)}</div><label>Correction<select value={correction[item.escalation_id] ?? ""} onChange={(event) => setCorrection({ ...correction, [item.escalation_id]: event.target.value })}><option value="">Select target field</option>{[item.suggestion, ...item.alternatives].filter(Boolean).map((value) => <option key={value!}>{value}</option>)}</select></label><div className="actions"><button onClick={() => decide(item, "REJECT")}>Reject</button><button onClick={() => decide(item, "CORRECT")}>Correct</button><button className="primary" onClick={() => decide(item, "APPROVE")}>Approve</button></div></article>)}</div></section>;
+}

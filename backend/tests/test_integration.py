@@ -3,11 +3,13 @@ from uuid import uuid4
 
 import pytest
 from fastapi import HTTPException
+from fastapi.testclient import TestClient
 
 from app.db.database import SessionLocal
 from app.db.tables import TargetWriteRow, TransformedRecordRow
 from app.integration.models import PushRequest, PushStatus
 from app.integration.service import payload_hash, push_record, retry_batch, rollback_batch
+from app.main import app
 
 
 def staged(db, batch: str, email: str, status: str = "VALID") -> tuple[TransformedRecordRow, dict]:
@@ -75,3 +77,17 @@ def test_rollback_is_batch_scoped() -> None:
         assert db.get(TargetWriteRow, first_result.target_write_id).status == PushStatus.ROLLED_BACK.value
         assert db.get(TargetWriteRow, other_result.target_write_id).status == PushStatus.SUCCESS.value
 
+
+def test_bulk_push_endpoint_is_idempotent_and_skips_invalid_records() -> None:
+    batch = str(uuid4())
+    with SessionLocal() as db:
+        valid, _ = staged(db, batch, "bulk@example.test")
+        staged(db, batch, "invalid", status="ESCALATION")
+        source_record_id = valid.source_record_id
+    client = TestClient(app)
+    first = client.post(f"/mock-target/migrations/{batch}/push-valid")
+    second = client.post(f"/mock-target/migrations/{batch}/push-valid")
+    assert first.status_code == 200
+    assert len(first.json()) == 1
+    assert first.json()[0]["source_record_id"] == source_record_id
+    assert second.json()[0]["idempotent_replay"] is True
