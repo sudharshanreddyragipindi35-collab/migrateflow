@@ -6,7 +6,7 @@ Status values are `PASS`, `FAIL`, `BLOCKED`, or `PENDING`. Every `PASS` requires
 |---:|---|---|---|
 | 0 | Repository contract and architecture | PASS | Backend `pytest` 2 passed; frontend Vitest 1 passed; production build succeeded; target schema parsed. |
 | 1 | Deterministic ingestion and profiling | PASS | `pytest`: 7 passed including three-file CSV/XLSX batch, masking, malformed, empty, and invalid-extension coverage. |
-| 2 | Target schema and mapping intelligence | PENDING | |
+| 2 | Target schema and mapping intelligence | PASS | `pytest`: 11 passed; structured proposals, component scoring, aliases, ambiguity, collisions, invalid output, and labelled fallback covered. |
 | 3 | Autonomy policy and human interrupt | PENDING | |
 | 4 | Cleaning reconciliation and validation | PENDING | |
 | 5 | Mock target integration | PENDING | |
@@ -35,3 +35,11 @@ Detailed acceptance evidence is added under a heading for each completed level a
 - Results: 7 passed; all three sample sources ingested together; CSV and XLSX profiles persisted and reloaded
 - Evidence: `backend/app/ingestion/profiler.py`, `backend/app/api/batches.py`, `backend/tests/test_ingestion.py`, `sample_data/`
 - Residual risk: encoding detection intentionally uses a bounded deterministic fallback list rather than probabilistic detection.
+
+## Level 2 Target schema and mapping intelligence
+
+- Status: PASS
+- Commands: `python -m pytest -q`
+- Results: 11 passed
+- Evidence: `backend/app/mapping/schema.py`, `backend/app/mapping/engine.py`, `backend/app/api/mappings.py`, `backend/tests/test_mapping.py`
+- Residual risk: a live Ollama call requires the configured local model and is intentionally unavailable in automated tests; deterministic fallback is explicit.

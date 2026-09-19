@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
 from app.api.batches import router as batches_router
+from app.api.mappings import router as mappings_router
 from app.db.database import init_db
 
 
@@ -27,6 +28,7 @@ def create_app() -> FastAPI:
         return {"status": "ok"}
 
     application.include_router(batches_router)
+    application.include_router(mappings_router)
 
     return application
 

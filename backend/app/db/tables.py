@@ -28,3 +28,12 @@ class SourceFileProfileRow(Base):
     storage_path: Mapped[str] = mapped_column(Text)
     profile_json: Mapped[str] = mapped_column(Text)
 
+
+class MappingProposalRow(Base):
+    __tablename__ = "mapping_proposals"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    batch_id: Mapped[str] = mapped_column(ForeignKey("ingestion_batches.id"), index=True)
+    source_file: Mapped[str] = mapped_column(String(255))
+    source_column: Mapped[str] = mapped_column(String(255))
+    proposal_json: Mapped[str] = mapped_column(Text)
