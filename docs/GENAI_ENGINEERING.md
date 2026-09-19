@@ -10,7 +10,7 @@ MigrateFlow uses generative AI only for semantic schema suggestions. The advance
 - Prompt-injection filtering redacts instruction-like file names, column names, and samples and tells the model to treat context as data.
 - Composite confidence combines model confidence with deterministic name, alias, type, pattern, and uniqueness evidence.
 - Human-in-the-loop gates ambiguous dates, low confidence, unmapped fields, and collisions.
-- Durable LangGraph state supports pause and resume while deterministic policy retains authority.
+- Durable SQL state supports pause and resume while a tested LangGraph contract makes the intended interrupt topology explicit.
 - Explicit fallback, timeout, retry, and failure states prevent silent imitation of model intelligence.
 - Evaluation cases, provider labels, audit events, and provenance make quality inspectable.
 

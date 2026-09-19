@@ -6,7 +6,7 @@
 |---|---|---|
 | `ingestion` | File validation, parsing, profiling, masked samples | Move parse work to workers; never parse unbounded files in API memory |
 | `mapping` | Provider adapters, schema-constrained output, deterministic scoring | Limit model concurrency independently from API replicas |
-| `agent` | LangGraph state transitions and human pause or resume | Persist checkpoints in shared storage before horizontal scaling |
+| `agent` | SQL-backed workflow transitions plus a LangGraph contract for policy/interrupt topology | Keep one durable source of truth; use a shared checkpointer before any runtime LangGraph migration |
 | `cleaning` and `validation` | Deterministic canonicalization and record rules | Pure, retryable, batch-partitioned work |
 | `integration` | Idempotent writes, retry, compensation | Per-target rate limit and circuit breaker |
 | `audit` and `events` | Immutable evidence and resumable progress | Database audit; Redis or broker fanout for multi-replica SSE |

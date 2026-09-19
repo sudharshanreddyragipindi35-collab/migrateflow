@@ -1,8 +1,14 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "../src/App";
 
 describe("App", () => {
+  beforeEach(() => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      mode: "ollama", provider: "Ollama", model: "qwen2.5:7b-instruct", status: "ready",
+    }), { status: 200, headers: { "Content-Type": "application/json" } })));
+  });
+
   it("renders the product navigation and accessible uploader", () => {
     render(<App />);
     expect(screen.getByRole("link", { name: "MigrateFlow home" })).toBeInTheDocument();
@@ -22,5 +28,10 @@ describe("App", () => {
     fireEvent.change(input, { target: { files: [new File(["x"], "employees.exe")] } });
     expect(screen.getByRole("alert")).toHaveTextContent("not a CSV or XLSX");
     expect(screen.getByRole("button", { name: "Create migration" })).toBeDisabled();
+  });
+
+  it("shows the active model provider and readiness", async () => {
+    render(<App />);
+    expect(await screen.findByText(/Ollama \/ qwen2.5:7b-instruct · ready/i)).toBeInTheDocument();
   });
 });

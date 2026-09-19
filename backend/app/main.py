@@ -11,6 +11,7 @@ from app.api.records import router as records_router
 from app.api.mock_target import router as mock_target_router
 from app.api.events import router as events_router
 from app.api.audit import router as audit_router
+from app.api.system import router as system_router
 from app.observability import correlation_middleware
 from app.db.database import init_db
 
@@ -58,6 +59,7 @@ def create_app() -> FastAPI:
     application.include_router(mock_target_router)
     application.include_router(events_router)
     application.include_router(audit_router)
+    application.include_router(system_router)
 
     return application
 

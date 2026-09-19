@@ -1,7 +1,8 @@
-import type { Escalation, PushResult, RecordPreview, WorkflowStatus } from "../types";
+import type { Escalation, ModelRuntimeStatus, PushResult, RecordPreview, WorkflowStatus } from "../types";
 const baseUrl = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
 async function request<T>(path: string, init?: RequestInit): Promise<T> { const response = await fetch(`${baseUrl}${path}`, init); if (!response.ok) { const body = await response.json().catch(() => ({})); throw new Error(body?.error?.message ?? `Request failed with ${response.status}`); } return response.json() as Promise<T>; }
 export const api = {
+  modelStatus: () => request<ModelRuntimeStatus>("/api/system/model"),
   upload(files: File[]) { const body = new FormData(); files.forEach((file) => body.append("files", file)); return request<{ batch_id: string }>("/api/batches", { method: "POST", body }); },
   propose: (batchId: string) => request(`/api/batches/${batchId}/mapping-proposals`, { method: "POST" }),
   start: (batchId: string) => request<WorkflowStatus>(`/api/batches/${batchId}/workflow/start`, { method: "POST" }),

@@ -18,10 +18,10 @@ GO for repository submission. The remaining recording and screenshot capture are
 | Gate | Command | Result |
 |---|---|---|
 | Backend lint | `python -m ruff check app tests` | PASS |
-| Backend types | `python -m mypy app` | PASS, 42 source files |
-| Backend tests | `python -m pytest -q` | PASS, 33 tests, including production-path multi-file reconciliation and record correction |
+| Backend types | `python -m mypy app` | PASS, 43 source files |
+| Backend tests | `python -m pytest -q` | PASS, 34 tests, including production-path multi-file reconciliation, record correction, and safe model-runtime reporting |
 | Frontend lint | `npm run lint` | PASS |
-| Frontend tests | `npm test` | PASS, 3 tests |
+| Frontend tests | `npm test` | PASS, 4 tests |
 | Frontend build | `npm run build` | PASS |
 | Evaluation | `python scripts/evaluate.py` | PASS, 6 cases and 8 metrics |
 | Container build | `docker compose up -d --build` | PASS |
@@ -30,6 +30,8 @@ GO for repository submission. The remaining recording and screenshot capture are
 | Backend health | `GET http://localhost:8000/health` | PASS, `status=ok` |
 | Frontend health | `GET http://localhost:5173` | PASS, HTTP 200 |
 | Anthropic mapping smoke | `POST /api/batches/{id}/mapping-proposals` | PASS, 4 proposals from `anthropic`; all 4 routed to human review |
+| Ollama structured mapping smoke | `OllamaMappingAdapter.propose(...)` | PASS, `qwen2.5:7b-instruct` returned a schema-valid `email` mapping |
+| Docker-to-Ollama connectivity | `GET host.docker.internal:11434/api/tags` from backend container | PASS, configured model visible |
 
 ## Requirement evidence
 
@@ -50,7 +52,7 @@ GO for repository submission. The remaining recording and screenshot capture are
 ## Known limitations
 
 - A production rollout still needs versioned Alembic revisions, a durable queue, object storage, shared SSE fanout, and managed infrastructure.
-- Model quality was not benchmarked against a running Ollama instance in automated CI; invalid and unavailable states are tested and explicit.
+- A live Ollama structured-output smoke passed on this workstation; model quality still needs a larger representative offline benchmark before client use.
 - The evaluation set is small and should grow before a client deployment.
 - The mock target demonstrates write semantics but not client authentication, quotas, or production networking.
 - The 2k and 10k tiers are documented hypotheses and have not been certified by production-scale load and failure testing.

@@ -2,7 +2,7 @@
 
 ## System boundary
 
-MigrateFlow is a supervised migration system with a FastAPI backend, React consultant interface, a SQLite local profile, and Ollama or Anthropic model adapters. LangGraph owns workflow orchestration. It does not own policy or irreversible authority. The production target uses stateless API replicas behind a load balancer with PostgreSQL, private object storage, and separately scalable workers.
+MigrateFlow is a supervised migration system with a FastAPI backend, React consultant interface, a SQLite local profile, and Ollama or Anthropic model adapters. A SQL-backed finite-state workflow owns durable orchestration, policy, and human decisions. A LangGraph contract models the policy/interrupt topology and is tested independently; it is not presented as the runtime source of truth. The production target uses stateless API replicas behind a load balancer with PostgreSQL, private object storage, and separately scalable workers.
 
 ## Components
 
@@ -16,7 +16,8 @@ MigrateFlow is a supervised migration system with a FastAPI backend, React consu
 ## Ownership decisions
 
 - Deterministic policy controls autonomy.
-- LangGraph owns orchestration and durable pause and resume.
+- Application tables own durable pause and resume so API queries, audits, and decisions share one transaction boundary.
+- LangGraph documents and tests the agent transition contract; adopting it at runtime requires a shared production checkpointer and removal of duplicate workflow state.
 - SQLite owns durable application state.
 - Audit entries are append only.
 - Ollama is the default local model path; Anthropic is an optional configured provider.

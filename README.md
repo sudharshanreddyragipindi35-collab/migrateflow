@@ -30,6 +30,8 @@ docker compose up --build
 
 Open the consultant UI at `http://localhost:5173`, the API at `http://localhost:8000`, and interactive OpenAPI documentation at `http://localhost:8000/docs`.
 
+The UI header and `GET /api/system/model` show the active provider, model name, and readiness without exposing credentials.
+
 ## Local development
 
 ```powershell

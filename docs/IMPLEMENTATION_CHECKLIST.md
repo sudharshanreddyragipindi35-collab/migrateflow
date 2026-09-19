@@ -15,6 +15,8 @@ Status values are `PASS`, `FAIL`, `BLOCKED`, or `PENDING`. Every `PASS` requires
 | 8 | Security observability and evaluation | PASS | `pytest`: 28 passed; six-case evaluation reports all required metrics; prompt/log injection and PII tests plus JSON/CSV audit export pass. |
 | 9 | End to end hardening | PASS | 33 backend tests, Ruff, mypy, ESLint, 3 frontend tests/build, production-path reconciliation, record correction, supervised retry/rollback, and healthy Docker Compose services passed. |
 | 10 | Submission package | PASS | Copy-ready README, one-page approach, timed demo, submission checklist, final validation, full regression, Docker health, and secret/TODO scans completed. |
+| 15 | Ollama local and Docker runtime | PASS | Live structured output passed with `qwen2.5:7b-instruct`; rebuilt backend container reached host Ollama through the Docker host gateway. |
+| 16 | Model runtime transparency | PASS | Safe runtime endpoint and UI provider/model/readiness label; 34 backend tests, 4 frontend tests, lint, types, build, and evaluation passed. |
 
 ## Level evidence
 
