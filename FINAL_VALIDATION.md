@@ -10,8 +10,8 @@ GO for repository submission. The remaining recording and screenshot capture are
 - Container runtime: Docker 29.6.2
 - Runtime contract: Python 3.12 container, Node.js 22 container
 - Local verification: Python 3.13.3, Node.js 24.11.1
-- Persistence: SQLite
-- Model path: Ollama `qwen2.5:7b-instruct`; explicit deterministic fallback used in automated tests
+- Persistence: SQLite local profile; PostgreSQL production configuration and pooling added
+- Model paths: Ollama `qwen2.5:7b-instruct`, optional Anthropic `claude-sonnet-4-6`, and explicit deterministic fallback
 
 ## Commands and results
 
@@ -19,12 +19,14 @@ GO for repository submission. The remaining recording and screenshot capture are
 |---|---|---|
 | Backend lint | `python -m ruff check app tests` | PASS |
 | Backend types | `python -m mypy app` | PASS, 42 source files |
-| Backend tests | `python -m pytest -q` | PASS, 29 tests |
+| Backend tests | `python -m pytest -q` | PASS, 31 tests |
 | Frontend lint | `npm run lint` | PASS |
 | Frontend tests | `npm test` | PASS, 3 tests |
 | Frontend build | `npm run build` | PASS |
 | Evaluation | `python scripts/evaluate.py` | PASS, 6 cases and 8 metrics |
 | Container build | `docker compose up -d --build` | PASS |
+| Production profile | `docker compose -f docker-compose.production.yml up -d --build --scale backend=2` | PASS, 2 healthy API replicas behind Nginx and PostgreSQL |
+| Load smoke | `python scripts/load_test.py --base-url http://localhost:8080 --users 200 --requests-per-user 5 --max-p95-ms 1500` | PASS, 1,000 requests, 0 errors, p95 525.08 ms on this workstation |
 | Backend health | `GET http://localhost:8000/health` | PASS, `status=ok` |
 | Frontend health | `GET http://localhost:5173` | PASS, HTTP 200 |
 
@@ -38,11 +40,14 @@ GO for repository submission. The remaining recording and screenshot capture are
 - Complete supervised scenario: `backend/tests/test_end_to_end.py`
 - PII and prompt-injection controls: `backend/app/security.py` and `backend/tests/test_security.py`
 - Consultant interface: `frontend/src/pages/`
+- Provider abstraction and fail-closed Anthropic configuration: `backend/app/mapping/engine.py` and `backend/tests/test_mapping.py`
+- HLD, LLD, capacity tiers, and GenAI controls: `docs/HIGH_LEVEL_DESIGN.md`, `docs/LOW_LEVEL_DESIGN.md`, `docs/SCALABILITY_AND_CAPACITY.md`, and `docs/GENAI_ENGINEERING.md`
+- Load-balancer and PostgreSQL scale demonstration: `docker-compose.production.yml` and `deploy/nginx/nginx.conf`
 
 ## Known limitations
 
-- A production rollout needs Alembic revisions and a server-grade database.
+- A production rollout still needs versioned Alembic revisions, a durable queue, object storage, shared SSE fanout, and managed infrastructure.
 - Model quality was not benchmarked against a running Ollama instance in automated CI; invalid and unavailable states are tested and explicit.
 - The evaluation set is small and should grow before a client deployment.
 - The mock target demonstrates write semantics but not client authentication, quotas, or production networking.
-
+- The 2k and 10k tiers are documented hypotheses and have not been certified by production-scale load and failure testing.

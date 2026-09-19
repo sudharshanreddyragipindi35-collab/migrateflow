@@ -2,7 +2,7 @@
 
 ## System boundary
 
-MigrateFlow is a supervised migration system with a FastAPI backend, React consultant interface, SQLite state store, and a local Ollama model adapter. LangGraph owns workflow orchestration. It does not own policy or irreversible authority.
+MigrateFlow is a supervised migration system with a FastAPI backend, React consultant interface, a SQLite local profile, and Ollama or Anthropic model adapters. LangGraph owns workflow orchestration. It does not own policy or irreversible authority. The production target uses stateless API replicas behind a load balancer with PostgreSQL, private object storage, and separately scalable workers.
 
 ## Components
 
@@ -19,10 +19,11 @@ MigrateFlow is a supervised migration system with a FastAPI backend, React consu
 - LangGraph owns orchestration and durable pause and resume.
 - SQLite owns durable application state.
 - Audit entries are append only.
-- Ollama is the default model path.
+- Ollama is the default local model path; Anthropic is an optional configured provider.
 - Mock mode is explicit and may not imitate model intelligence.
 
 ## Data flow
 
 Uploaded files are stored outside public paths under generated batch identifiers. Only bounded column metadata, aggregate statistics, and masked examples may reach a model. Raw records remain in deterministic processing paths. Target writes occur only after mapping, validation, and approval gates pass.
 
+Detailed decisions and capacity assumptions are in `HIGH_LEVEL_DESIGN.md`, `LOW_LEVEL_DESIGN.md`, `SCALABILITY_AND_CAPACITY.md`, and `GENAI_ENGINEERING.md`.

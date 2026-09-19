@@ -18,7 +18,7 @@ MigrateFlow ingests CSV and XLSX employee exports, profiles them without exposin
 ## Prerequisites
 
 - Docker Desktop with Compose, or Python 3.12 plus Node.js 22
-- Ollama for live semantic proposals; deterministic fallback is available without it
+- Ollama or an Anthropic API key for live semantic proposals; deterministic fallback is available without either
 - PowerShell 7 for the included convenience scripts
 
 ## Quick start with Docker
@@ -65,6 +65,18 @@ ollama serve
 
 Set `MODEL_MODE=ollama` for live structured proposals. Set `MODEL_MODE=fallback` to use the clearly labelled deterministic mapping fallback. If Ollama is selected but unavailable, the API returns an explicit 503 instead of imitating model output.
 
+## Anthropic model setup
+
+The Anthropic adapter uses the same minimized, masked context and structured `ModelMapping` contract as Ollama. Keep the committed placeholder empty, then set these values only in your untracked `.env`:
+
+```dotenv
+MODEL_MODE=anthropic
+ANTHROPIC_API_KEY=
+ANTHROPIC_MODEL=claude-sonnet-4-6
+```
+
+Put your real key after `ANTHROPIC_API_KEY=` locally. A blank key fails closed with an explicit 503 before any provider request is attempted.
+
 ## Environment variables
 
 Copy `.env.example` to `.env`. Important settings include:
@@ -77,7 +89,14 @@ Copy `.env.example` to `.env`. Important settings include:
 | `MAX_UPLOAD_BYTES` | Per-file byte limit | `10485760` |
 | `OLLAMA_BASE_URL` | Local Ollama endpoint | `http://localhost:11434` |
 | `OLLAMA_MODEL` | Open-source instruction model | `qwen2.5:7b-instruct` |
-| `MODEL_MODE` | `ollama` or explicit `fallback` | `ollama` |
+| `ANTHROPIC_API_KEY` | Anthropic credential; intentionally blank in source | blank |
+| `ANTHROPIC_MODEL` | Anthropic model identifier | `claude-sonnet-4-6` |
+| `LLM_REQUEST_TIMEOUT_SECONDS` | Per-model-call timeout | `30` |
+| `LLM_MAX_RETRIES` | Provider retry ceiling | `2` |
+| `MODEL_MODE` | `ollama`, `anthropic`, or explicit `fallback` | `ollama` |
+| `DB_POOL_SIZE` | Persistent connections per production replica | `10` |
+| `DB_MAX_OVERFLOW` | Temporary overflow connections per replica | `20` |
+| `AUTO_CREATE_SCHEMA` | Local-only schema bootstrap; disable for replicas | `true` |
 | `DEMO_FAILURES` | Enable deterministic retry demo | `false` |
 | `CORS_ORIGINS` | Comma-separated allowed origins | `http://localhost:5173` |
 
@@ -112,7 +131,16 @@ docker compose build
 
 ## Architecture
 
-The application keeps deterministic parsing, scoring, policy, validation, retries, and rollback separate from semantic model suggestions. SQLite stores durable workflow state and append-only audit evidence. See `docs/ARCHITECTURE.md` and `docs/AUTONOMY_POLICY.md`.
+The application keeps deterministic parsing, scoring, policy, validation, retries, and rollback separate from semantic model suggestions. SQLite is the local profile; PostgreSQL and stateless replicas are the production target.
+
+- [Architecture overview](docs/ARCHITECTURE.md)
+- [High-level design](docs/HIGH_LEVEL_DESIGN.md)
+- [Low-level design](docs/LOW_LEVEL_DESIGN.md)
+- [Scalability and capacity plan](docs/SCALABILITY_AND_CAPACITY.md)
+- [GenAI engineering design](docs/GENAI_ENGINEERING.md)
+- [Autonomy policy](docs/AUTONOMY_POLICY.md)
+
+For a single-host scale demonstration, set the required secrets outside source control and run `docker compose -f docker-compose.production.yml up --build --scale backend=4`. The Nginx edge listens on `http://localhost:8080`.
 
 ## Security
 
@@ -137,9 +165,9 @@ Do not commit `.env`, databases, uploads, raw client data, or secrets. Model inp
 ## Known limitations
 
 - The evaluation corpus is intentionally small and demonstrates mechanics rather than production accuracy.
-- SQLite and the prototype migration initializer suit a take-home deployment, not horizontally scaled workers.
+- SQLite and the prototype migration initializer suit a take-home deployment, not horizontally scaled workers; the production design requires PostgreSQL and versioned migrations.
 - The mock target demonstrates integration semantics; a real connector needs client-specific authentication and rate-limit handling.
-- Live semantic quality depends on the locally installed Ollama model. Deterministic safeguards do not depend on model availability.
+- Live semantic quality depends on the selected Ollama or Anthropic model and provider quota. Deterministic safeguards do not depend on model availability.
 
 ## Skills used
 
@@ -148,3 +176,5 @@ Do not commit `.env`, databases, uploads, raw client data, or secrets. Model inp
 - Frontend engineering with React, Vite, TypeScript, and accessible interaction design
 - Test engineering for unit, contract, integration, and end-to-end validation
 - Secure data handling for PII masking, idempotency, audit trails, and rollback controls
+- System design for HLD, LLD, load balancing, database pooling, capacity tiers, and resilience testing
+- GenAI engineering for provider abstraction, structured output, prompt-injection defense, human review, and evaluation

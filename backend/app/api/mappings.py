@@ -8,7 +8,14 @@ from app.config import get_settings
 from app.db.database import get_db
 from app.db.tables import IngestionBatchRow, MappingProposalRow, SourceFileProfileRow
 from app.ingestion.models import SourceFileProfile
-from app.mapping.engine import DeterministicFallback, MappingModel, ModelUnavailable, OllamaMappingAdapter, propose_mappings
+from app.mapping.engine import (
+    AnthropicMappingAdapter,
+    DeterministicFallback,
+    MappingModel,
+    ModelUnavailable,
+    OllamaMappingAdapter,
+    propose_mappings,
+)
 from app.mapping.models import MappingProposal
 from app.mapping.schema import load_target_schema
 
@@ -32,7 +39,20 @@ def create_mapping_proposals(
         adapter = DeterministicFallback()
     else:
         try:
-            adapter = OllamaMappingAdapter(settings.ollama_base_url, settings.ollama_model)
+            if settings.model_mode == "ollama":
+                adapter = OllamaMappingAdapter(settings.ollama_base_url, settings.ollama_model)
+            elif settings.model_mode == "anthropic":
+                adapter = AnthropicMappingAdapter(
+                    settings.anthropic_api_key,
+                    settings.anthropic_model,
+                    settings.llm_request_timeout_seconds,
+                    settings.llm_max_retries,
+                )
+            else:
+                raise HTTPException(
+                    422,
+                    "MODEL_MODE must be one of: ollama, anthropic, fallback",
+                )
         except ModelUnavailable as exc:
             raise HTTPException(503, str(exc)) from exc
     proposals = propose_mappings(_profiles(db, batch_id), load_target_schema(), adapter)

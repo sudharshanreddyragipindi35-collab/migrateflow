@@ -18,7 +18,8 @@ from app.db.database import init_db
 def create_app() -> FastAPI:
     settings = get_settings()
     application = FastAPI(title="MigrateFlow API", version="0.1.0")
-    init_db()
+    if settings.auto_create_schema:
+        init_db()
     application.middleware("http")(correlation_middleware)
     application.add_middleware(
         CORSMiddleware,
