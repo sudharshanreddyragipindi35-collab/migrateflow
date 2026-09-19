@@ -21,6 +21,7 @@ Status values are `PASS`, `FAIL`, `BLOCKED`, or `PENDING`. Every `PASS` requires
 | 18 | Safe record correction UX | PASS | Required dates use a native date picker with ISO guidance and an explicit reject-instead-of-guessing boundary; 5 frontend tests pass. |
 | 19 | Batched semantic mapping | PASS | Ollama and Anthropic use one structured request per source file; strict count validation, prompt-safety tests, 36 backend tests, and a live Ollama end-to-end smoke pass. |
 | 20 | Plain-language review guidance | PASS | Review cards use readable field names and actionable errors; dates show `YYYY-MM-DD` with a concrete example and never-guess guidance; 37 backend and 5 frontend tests pass. |
+| 21 | Configurable LLM concurrency | PASS | Columns remain batched into one request per source file; independent file requests use `LLM_PARALLEL_WORKERS` with deterministic result ordering, bounded configuration, runtime visibility, concurrency proof, and one safe retry for incomplete structured responses; 40 backend and 5 frontend tests pass. |
 
 ## Level evidence
 

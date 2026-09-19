@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor
 from difflib import SequenceMatcher
 from typing import Protocol
 
@@ -235,14 +236,43 @@ def _validate_batch_result(
 
 
 def propose_mappings(
-    profiles: list[SourceFileProfile], schema: TargetSchema, model: MappingModel | None = None
+    profiles: list[SourceFileProfile],
+    schema: TargetSchema,
+    model: MappingModel | None = None,
+    parallel_workers: int = 1,
 ) -> list[MappingProposal]:
     adapter = model or DeterministicFallback()
     proposals: list[MappingProposal] = []
     target_by_name = {item.name: item for item in schema.fields}
-    for profile in profiles:
-        propose_many = getattr(adapter, "propose_many", None)
-        batch_results = propose_many(profile.file_name, profile.columns, schema) if callable(propose_many) else None
+    propose_many = getattr(adapter, "propose_many", None)
+
+    def propose_profile(profile: SourceFileProfile) -> dict[str, ModelMapping] | None:
+        return propose_many(profile.file_name, profile.columns, schema) if callable(propose_many) else None
+
+    worker_count = min(len(profiles), max(1, parallel_workers))
+    if callable(propose_many) and worker_count > 1:
+        batch_results_by_profile: list[dict[str, ModelMapping] | None] = [None] * len(profiles)
+        retry_indexes: list[int] = []
+        with ThreadPoolExecutor(max_workers=worker_count, thread_name_prefix="mapping") as executor:
+            futures = [executor.submit(propose_profile, profile) for profile in profiles]
+            for index, future in enumerate(futures):
+                try:
+                    batch_results_by_profile[index] = future.result()
+                except (InvalidModelOutput, ModelUnavailable):
+                    retry_indexes.append(index)
+        # Concurrent local inference can be resource-sensitive. Retry only failed
+        # file batches after the parallel wave, when the provider is no longer busy.
+        for index in retry_indexes:
+            batch_results_by_profile[index] = propose_profile(profiles[index])
+    else:
+        batch_results_by_profile = []
+        for profile in profiles:
+            try:
+                batch_results_by_profile.append(propose_profile(profile))
+            except (InvalidModelOutput, ModelUnavailable):
+                batch_results_by_profile.append(propose_profile(profile))
+
+    for profile, batch_results in zip(profiles, batch_results_by_profile, strict=True):
         for column in profile.columns:
             model_result = (
                 batch_results[column.name]

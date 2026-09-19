@@ -78,7 +78,7 @@ ollama serve
 
 Set `MODEL_MODE=ollama` for live structured proposals. Set `MODEL_MODE=fallback` to use the clearly labelled deterministic mapping fallback. If Ollama is selected but unavailable, the API returns an explicit 503 instead of imitating model output.
 
-Live semantic proposals are batched once per source file rather than once per column. A local 7B model can still take one to three minutes on CPU-heavy hardware; use fallback mode for a fast UI walkthrough and Ollama mode for the final open-source-model demonstration.
+Live semantic proposals are batched once per source file rather than once per column. Independent source-file requests run concurrently, controlled by `LLM_PARALLEL_WORKERS` (default `3`). A single seven-column file therefore makes one model call; three files can use up to three concurrent calls. If a structured response is incomplete, only that file batch is retried once; concurrent retries wait until the parallel wave is finished. A local 7B model can still take one to three minutes on CPU-heavy hardware; use fallback mode for a fast UI walkthrough and Ollama mode for the final open-source-model demonstration.
 
 ## Anthropic model setup
 
@@ -109,6 +109,7 @@ Copy `.env.example` to `.env`. Important settings include:
 | `ANTHROPIC_MODEL` | Anthropic model identifier | `claude-sonnet-4-6` |
 | `LLM_REQUEST_TIMEOUT_SECONDS` | Per-model-call timeout | `30` |
 | `LLM_MAX_RETRIES` | Provider retry ceiling | `2` |
+| `LLM_PARALLEL_WORKERS` | Concurrent source-file model calls (`1` to `16`) | `3` |
 | `MODEL_MODE` | `ollama`, `anthropic`, or explicit `fallback` | `ollama` |
 | `DB_POOL_SIZE` | Persistent connections per production replica | `10` |
 | `DB_MAX_OVERFLOW` | Temporary overflow connections per replica | `20` |

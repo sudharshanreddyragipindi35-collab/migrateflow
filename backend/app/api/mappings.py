@@ -60,7 +60,12 @@ def create_mapping_proposals(
     emit_event(db, batch_id, "node_started", {"node": "mapping_generation", "provider": adapter.provider})
     db.commit()
     try:
-        proposals = propose_mappings(_profiles(db, batch_id), load_target_schema(), adapter)
+        proposals = propose_mappings(
+            _profiles(db, batch_id),
+            load_target_schema(),
+            adapter,
+            parallel_workers=settings.llm_parallel_workers,
+        )
     except (ModelUnavailable, InvalidModelOutput) as exc:
         emit_event(db, batch_id, "workflow_failed", {"node": "mapping_generation", "message": str(exc)})
         db.commit()
@@ -80,7 +85,12 @@ def create_mapping_proposals(
         db,
         batch_id,
         "node_completed",
-        {"node": "mapping_generation", "proposal_count": len(proposals), "provider": adapter.provider},
+        {
+            "node": "mapping_generation",
+            "proposal_count": len(proposals),
+            "provider": adapter.provider,
+            "parallel_workers": settings.llm_parallel_workers,
+        },
     )
     db.commit()
     return proposals

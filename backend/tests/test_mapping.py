@@ -1,3 +1,5 @@
+from threading import Barrier, get_ident
+
 from app.ingestion.models import ColumnProfile, SourceFileProfile
 from app.mapping.engine import (
     AnthropicMappingAdapter,
@@ -145,6 +147,98 @@ def test_model_columns_are_batched_once_per_source_file() -> None:
     proposals = propose_mappings(profiles, load_target_schema(), model)
     assert len(proposals) == 3
     assert model.batch_calls == 2
+
+
+class ConcurrentBatchModel(BatchModel):
+    def __init__(self) -> None:
+        super().__init__()
+        self.barrier = Barrier(2)
+        self.thread_ids: set[int] = set()
+
+    def propose_many(
+        self, source_file: str, columns: list[ColumnProfile], schema: object
+    ) -> dict[str, ModelMapping]:
+        self.thread_ids.add(get_ident())
+        self.barrier.wait(timeout=2)
+        return super().propose_many(source_file, columns, schema)
+
+
+def test_source_file_batches_use_configured_parallel_workers() -> None:
+    profiles = [
+        SourceFileProfile(
+            file_name=f"source-{index}.csv", sheet_name=None, row_count=1,
+            columns=[column("employee_id")], duplicate_row_count=0, encoding="utf-8",
+        )
+        for index in range(2)
+    ]
+    model = ConcurrentBatchModel()
+    proposals = propose_mappings(
+        profiles, load_target_schema(), model, parallel_workers=2
+    )
+    assert [item.source_file for item in proposals] == ["source-0.csv", "source-1.csv"]
+    assert model.batch_calls == 2
+    assert len(model.thread_ids) == 2
+
+
+class RecoveringConcurrentBatchModel(BatchModel):
+    def __init__(self) -> None:
+        super().__init__()
+        self.barrier = Barrier(2)
+        self.attempts: dict[str, int] = {}
+
+    def propose_many(
+        self, source_file: str, columns: list[ColumnProfile], schema: object
+    ) -> dict[str, ModelMapping]:
+        attempt = self.attempts.get(source_file, 0) + 1
+        self.attempts[source_file] = attempt
+        if attempt == 1:
+            self.barrier.wait(timeout=2)
+        if source_file == "source-0.csv" and attempt == 1:
+            raise InvalidModelOutput("incomplete concurrent response")
+        return super().propose_many(source_file, columns, schema)
+
+
+def test_failed_concurrent_batch_is_retried_after_parallel_wave() -> None:
+    profiles = [
+        SourceFileProfile(
+            file_name=f"source-{index}.csv", sheet_name=None, row_count=1,
+            columns=[column("employee_id")], duplicate_row_count=0, encoding="utf-8",
+        )
+        for index in range(2)
+    ]
+    model = RecoveringConcurrentBatchModel()
+    proposals = propose_mappings(
+        profiles, load_target_schema(), model, parallel_workers=2
+    )
+    assert len(proposals) == 2
+    assert model.attempts == {"source-0.csv": 2, "source-1.csv": 1}
+
+
+class RecoveringSingleBatchModel(BatchModel):
+    def __init__(self) -> None:
+        super().__init__()
+        self.attempts = 0
+
+    def propose_many(
+        self, source_file: str, columns: list[ColumnProfile], schema: object
+    ) -> dict[str, ModelMapping]:
+        self.attempts += 1
+        if self.attempts == 1:
+            raise InvalidModelOutput("incomplete structured response")
+        return super().propose_many(source_file, columns, schema)
+
+
+def test_incomplete_single_file_batch_is_retried_once() -> None:
+    profile = SourceFileProfile(
+        file_name="single.csv", sheet_name=None, row_count=1,
+        columns=[column("employee_id")], duplicate_row_count=0, encoding="utf-8",
+    )
+    model = RecoveringSingleBatchModel()
+    proposals = propose_mappings(
+        [profile], load_target_schema(), model, parallel_workers=3
+    )
+    assert len(proposals) == 1
+    assert model.attempts == 2
 
 
 def test_batch_prompt_masks_every_column() -> None:

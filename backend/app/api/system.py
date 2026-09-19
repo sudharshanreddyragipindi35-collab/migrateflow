@@ -15,6 +15,7 @@ class ModelRuntimeStatus(BaseModel):
     provider: str
     model: str | None
     status: str
+    parallel_workers: int
 
 
 def _ollama_status(base_url: str, model: str) -> str:
@@ -36,6 +37,7 @@ def model_runtime() -> ModelRuntimeStatus:
             provider="Ollama",
             model=settings.ollama_model,
             status=_ollama_status(settings.ollama_base_url, settings.ollama_model),
+            parallel_workers=settings.llm_parallel_workers,
         )
     if settings.model_mode == "anthropic":
         return ModelRuntimeStatus(
@@ -43,6 +45,7 @@ def model_runtime() -> ModelRuntimeStatus:
             provider="Anthropic",
             model=settings.anthropic_model,
             status="configured" if settings.anthropic_api_key.strip() else "misconfigured",
+            parallel_workers=settings.llm_parallel_workers,
         )
     if settings.model_mode == "fallback":
         return ModelRuntimeStatus(
@@ -50,10 +53,12 @@ def model_runtime() -> ModelRuntimeStatus:
             provider="Deterministic fallback",
             model=None,
             status="ready",
+            parallel_workers=1,
         )
     return ModelRuntimeStatus(
         mode=settings.model_mode,
         provider="Unknown",
         model=None,
         status="misconfigured",
+        parallel_workers=settings.llm_parallel_workers,
     )

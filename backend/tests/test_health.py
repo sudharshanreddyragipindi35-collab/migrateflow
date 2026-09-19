@@ -28,5 +28,6 @@ def test_model_runtime_status_is_safe_and_explicit(monkeypatch) -> None:
         "provider": "Deterministic fallback",
         "model": None,
         "status": "ready",
+        "parallel_workers": 1,
     }
     assert "must-not-appear" not in response.text

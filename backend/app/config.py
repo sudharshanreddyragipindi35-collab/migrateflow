@@ -1,5 +1,6 @@
 from functools import lru_cache
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -15,6 +16,7 @@ class Settings(BaseSettings):
     anthropic_model: str = "claude-sonnet-4-6"
     llm_request_timeout_seconds: float = 30.0
     llm_max_retries: int = 2
+    llm_parallel_workers: int = Field(default=3, ge=1, le=16)
     model_mode: str = "ollama"
     demo_failures: bool = False
     cors_origins: str = "http://localhost:5173"

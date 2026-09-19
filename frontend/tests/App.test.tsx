@@ -5,7 +5,7 @@ import { App } from "../src/App";
 describe("App", () => {
   beforeEach(() => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({
-      mode: "ollama", provider: "Ollama", model: "qwen2.5:7b-instruct", status: "ready",
+      mode: "ollama", provider: "Ollama", model: "qwen2.5:7b-instruct", status: "ready", parallel_workers: 3,
     }), { status: 200, headers: { "Content-Type": "application/json" } })));
   });
 
@@ -32,6 +32,6 @@ describe("App", () => {
 
   it("shows the active model provider and readiness", async () => {
     render(<App />);
-    expect(await screen.findByText(/Ollama \/ qwen2.5:7b-instruct · ready/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Ollama \/ qwen2.5:7b-instruct · 3 parallel workers · ready/i)).toBeInTheDocument();
   });
 });

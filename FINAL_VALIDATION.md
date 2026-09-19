@@ -19,7 +19,7 @@ GO for repository submission. The remaining recording and screenshot capture are
 |---|---|---|
 | Backend lint | `python -m ruff check app tests` | PASS |
 | Backend types | `python -m mypy app` | PASS, 43 source files |
-| Backend tests | `python -m pytest -q` | PASS, 37 tests, including production-path multi-file reconciliation, batched model mapping, plain-language validation guidance, record correction, and safe model-runtime reporting |
+| Backend tests | `python -m pytest -q` | PASS, 40 tests, including production-path multi-file reconciliation, batched and parallel file-level model mapping with structured-response recovery, plain-language validation guidance, record correction, and safe model-runtime reporting |
 | Frontend lint | `npm run lint` | PASS |
 | Frontend tests | `npm test` | PASS, 5 tests |
 | Frontend build | `npm run build` | PASS |
