@@ -8,7 +8,7 @@ Status values are `PASS`, `FAIL`, `BLOCKED`, or `PENDING`. Every `PASS` requires
 | 1 | Deterministic ingestion and profiling | PASS | `pytest`: 7 passed including three-file CSV/XLSX batch, masking, malformed, empty, and invalid-extension coverage. |
 | 2 | Target schema and mapping intelligence | PASS | `pytest`: 11 passed; structured proposals, component scoring, aliases, ambiguity, collisions, invalid output, and labelled fallback covered. |
 | 3 | Autonomy policy and human interrupt | PASS | `pytest`: 15 passed; SQLite-checkpointed StateGraph, policy gates, durable pause/correct/resume, duplicate resolution, and audit coverage. |
-| 4 | Cleaning reconciliation and validation | PENDING | |
+| 4 | Cleaning reconciliation and validation | PASS | `pytest`: 19 passed; deterministic provenance, ambiguous dates, required failures, exact merge, conflicts, immutable originals, and two-attempt escalation covered. |
 | 5 | Mock target integration | PENDING | |
 | 6 | Backend APIs events and persistence | PENDING | |
 | 7 | Consultant user interface | PENDING | |
@@ -51,3 +51,11 @@ Detailed acceptance evidence is added under a heading for each completed level a
 - Results: 15 passed
 - Evidence: `backend/app/agent/graph.py`, `backend/app/agent/policy.py`, `backend/app/agent/service.py`, `backend/tests/test_policy.py`, `backend/tests/test_workflow.py`
 - Residual risk: the HTTP workflow service mirrors durable graph state in application tables so it can be queried efficiently; the graph checkpointer remains the orchestration checkpoint contract.
+
+## Level 4 Cleaning reconciliation and validation
+
+- Status: PASS
+- Commands: `python -m pytest -q`
+- Results: 19 passed
+- Evidence: `backend/app/cleaning/service.py`, `backend/app/validation/employee.py`, `backend/app/api/records.py`, `backend/tests/test_cleaning.py`
+- Residual risk: probable duplicate scoring is intentionally conservative and routes any conflicting nonempty values to review.

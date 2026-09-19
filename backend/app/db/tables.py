@@ -79,3 +79,18 @@ class AuditEventRow(Base):
     entity_id: Mapped[str] = mapped_column(String(255))
     details_json: Mapped[str] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+
+
+class TransformedRecordRow(Base):
+    __tablename__ = "transformed_records"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    batch_id: Mapped[str] = mapped_column(ForeignKey("ingestion_batches.id"), index=True)
+    source_file: Mapped[str] = mapped_column(String(255))
+    source_record_id: Mapped[str] = mapped_column(String(255))
+    original_json: Mapped[str] = mapped_column(Text)
+    transformed_json: Mapped[str] = mapped_column(Text)
+    provenance_json: Mapped[str] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(String(32))
+    errors_json: Mapped[str] = mapped_column(Text)
+    attempt_count: Mapped[int] = mapped_column(Integer, default=1)
