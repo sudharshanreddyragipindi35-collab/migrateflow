@@ -1,3 +1,5 @@
+name: migrateflow
+
 services:
   backend:
     build: ./backend
@@ -24,4 +26,3 @@ services:
 
 volumes:
   migrateflow-data:
-

@@ -13,7 +13,7 @@ Status values are `PASS`, `FAIL`, `BLOCKED`, or `PENDING`. Every `PASS` requires
 | 6 | Backend APIs events and persistence | PASS | `pytest`: 25 passed; OpenAPI contract, ordered typed SSE snapshot/reconnect, error envelope, and durable state covered. |
 | 7 | Consultant user interface | PASS | Vitest 3 passed and production build succeeded; five responsive views, SSE, decisions, preview, retry, rollback confirmation, empty/error states, and labels implemented. |
 | 8 | Security observability and evaluation | PASS | `pytest`: 28 passed; six-case evaluation reports all required metrics; prompt/log injection and PII tests plus JSON/CSV audit export pass. |
-| 9 | End to end hardening | PENDING | |
+| 9 | End to end hardening | PASS | 29 backend tests, Ruff, mypy, ESLint, 3 frontend tests/build, supervised E2E retry/rollback, and healthy Docker Compose services passed. |
 | 10 | Submission package | PENDING | |
 
 ## Level evidence
@@ -91,3 +91,11 @@ Detailed acceptance evidence is added under a heading for each completed level a
 - Results: 28 backend tests passed; six evaluation cases produced reproducible metrics; frontend build passed
 - Evidence: `backend/app/security.py`, `backend/app/observability.py`, `backend/app/api/audit.py`, `evaluation/report.json`, `backend/tests/test_security.py`
 - Residual risk: evaluation data is intentionally small and should expand with representative client distributions before production use.
+
+## Level 9 End to end hardening
+
+- Status: PASS
+- Commands: `python -m ruff check app tests`, `python -m mypy app`, `python -m pytest -q`, `npm run lint`, `npm test`, `npm run build`, `docker compose up -d --build`, HTTP health checks
+- Results: Ruff passed; mypy passed 42 source files; backend 29 passed; frontend lint passed; frontend 3 passed and built; both Compose services started and backend reported healthy
+- Evidence: `backend/tests/test_end_to_end.py`, `scripts/setup.ps1`, `scripts/test.ps1`, `docker-compose.yml`
+- Residual risk: local Ollama availability and model quality remain environment-dependent; deterministic fallback and explicit unavailable states are retained.

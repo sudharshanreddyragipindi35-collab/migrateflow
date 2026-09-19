@@ -170,6 +170,9 @@ def propose_mappings(
             )
             final = round(sum(getattr(components, key) * weight for key, weight in WEIGHTS.items()), 4)
             alternatives = list(dict.fromkeys(model_result.alternatives + [item[1].name for item in candidates[1:3]]))[:3]
+            warnings = list(model_result.warnings)
+            if selected.type == "date" and "DD/MM/YYYY_OR_MM/DD/YYYY" in column.date_patterns:
+                warnings.append("AMBIGUOUS_DATE")
             proposals.append(
                 MappingProposal(
                     source_file=profile.file_name,
@@ -179,8 +182,8 @@ def propose_mappings(
                     alternatives=alternatives,
                     reasoning=model_result.reasoning,
                     evidence=components,
-                    warnings=model_result.warnings,
-                    requires_human=final < 0.90,
+                    warnings=warnings,
+                    requires_human=final < 0.90 or "AMBIGUOUS_DATE" in warnings,
                     provider=adapter.provider,
                 )
             )

@@ -8,7 +8,7 @@ from app.config import get_settings
 from app.db.database import get_db
 from app.db.tables import IngestionBatchRow, MappingProposalRow, SourceFileProfileRow
 from app.ingestion.models import SourceFileProfile
-from app.mapping.engine import DeterministicFallback, ModelUnavailable, OllamaMappingAdapter, propose_mappings
+from app.mapping.engine import DeterministicFallback, MappingModel, ModelUnavailable, OllamaMappingAdapter, propose_mappings
 from app.mapping.models import MappingProposal
 from app.mapping.schema import load_target_schema
 
@@ -27,6 +27,7 @@ def create_mapping_proposals(
     if db.get(IngestionBatchRow, batch_id) is None:
         raise HTTPException(404, "Batch not found")
     settings = get_settings()
+    adapter: MappingModel
     if fallback or settings.model_mode == "fallback":
         adapter = DeterministicFallback()
     else:
@@ -57,4 +58,3 @@ def get_mapping_proposals(batch_id: str, db: Session = Depends(get_db)) -> list[
     if not rows and db.get(IngestionBatchRow, batch_id) is None:
         raise HTTPException(404, "Batch not found")
     return [MappingProposal.model_validate(json.loads(row.proposal_json)) for row in rows]
-

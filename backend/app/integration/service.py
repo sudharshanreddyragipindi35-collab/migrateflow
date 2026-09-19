@@ -3,7 +3,7 @@ import json
 from uuid import uuid4
 
 from fastapi import HTTPException
-from sqlalchemy import delete, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db.tables import AuditEventRow, TargetWriteRow, TransformedRecordRow
@@ -94,4 +94,3 @@ def rollback_batch(db: Session, batch_id: str) -> int:
             count += 1
     db.commit()
     return count
-

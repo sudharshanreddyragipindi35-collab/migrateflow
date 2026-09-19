@@ -1,4 +1,3 @@
-import json
 from uuid import uuid4
 
 from fastapi.testclient import TestClient
@@ -46,4 +45,3 @@ def test_sse_is_ordered_safe_and_resumable() -> None:
     resumed = client.get(f"/api/batches/{batch}/events?snapshot=true", headers={"Last-Event-ID": str(first_id)})
     assert "node_started" not in resumed.text
     assert "progress" in resumed.text
-
