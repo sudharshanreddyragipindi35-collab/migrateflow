@@ -12,7 +12,7 @@ Status values are `PASS`, `FAIL`, `BLOCKED`, or `PENDING`. Every `PASS` requires
 | 5 | Mock target integration | PASS | `pytest`: 22 passed; per-record persistence, retryable/permanent states, idempotent replay/conflict, approved-only push, and batch rollback covered. |
 | 6 | Backend APIs events and persistence | PASS | `pytest`: 25 passed; OpenAPI contract, ordered typed SSE snapshot/reconnect, error envelope, and durable state covered. |
 | 7 | Consultant user interface | PASS | Vitest 3 passed and production build succeeded; five responsive views, SSE, decisions, preview, retry, rollback confirmation, empty/error states, and labels implemented. |
-| 8 | Security observability and evaluation | PENDING | |
+| 8 | Security observability and evaluation | PASS | `pytest`: 28 passed; six-case evaluation reports all required metrics; prompt/log injection and PII tests plus JSON/CSV audit export pass. |
 | 9 | End to end hardening | PENDING | |
 | 10 | Submission package | PENDING | |
 
@@ -83,3 +83,11 @@ Detailed acceptance evidence is added under a heading for each completed level a
 - Results: 3 component tests passed; TypeScript and Vite production build passed
 - Evidence: `frontend/src/App.tsx`, `frontend/src/pages/`, `frontend/src/api/client.ts`, `frontend/tests/App.test.tsx`
 - Residual risk: browser-level accessibility and cross-browser checks remain part of final manual QA.
+
+## Level 8 Security observability and evaluation
+
+- Status: PASS
+- Commands: `python -m pytest -q`, `python scripts/evaluate.py`, `npm run build`
+- Results: 28 backend tests passed; six evaluation cases produced reproducible metrics; frontend build passed
+- Evidence: `backend/app/security.py`, `backend/app/observability.py`, `backend/app/api/audit.py`, `evaluation/report.json`, `backend/tests/test_security.py`
+- Residual risk: evaluation data is intentionally small and should expand with representative client distributions before production use.

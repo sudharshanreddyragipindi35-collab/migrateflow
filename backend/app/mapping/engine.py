@@ -9,6 +9,7 @@ from pydantic import ValidationError
 
 from app.ingestion.models import ColumnProfile, SourceFileProfile
 from app.mapping.models import MappingProposal, ModelMapping, ScoreComponents, TargetField, TargetSchema
+from app.security import model_safe_column
 
 ALIASES: dict[str, set[str]] = {
     "employee_id": {"employee_id", "emp_id", "staff_id", "worker_id", "employee_number"},
@@ -111,7 +112,7 @@ class OllamaMappingAdapter:
     def propose(self, source_file: str, column: ColumnProfile, schema: TargetSchema) -> ModelMapping:
         safe_context = {
             "source_file": source_file,
-            "column": column.model_dump(mode="json"),
+            "column": model_safe_column(column),
             "target_fields": [item.model_dump(mode="json") for item in schema.fields],
         }
         try:

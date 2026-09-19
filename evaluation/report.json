@@ -1,0 +1,11 @@
+{
+  "mapping_precision": 1.0,
+  "mapping_recall": 1.0,
+  "auto_apply_precision": 1.0,
+  "escalation_precision": 1.0,
+  "escalation_recall": 1.0,
+  "validation_pass_rate": 1.0,
+  "duplicate_reconciliation_accuracy": 1.0,
+  "push_success_after_retry": 1.0,
+  "case_count": 6
+}

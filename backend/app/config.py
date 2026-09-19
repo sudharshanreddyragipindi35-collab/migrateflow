@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     model_mode: str = "ollama"
     demo_failures: bool = False
     cors_origins: str = "http://localhost:5173"
+    max_model_prompt_chars: int = 12000
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
@@ -21,4 +22,3 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
-

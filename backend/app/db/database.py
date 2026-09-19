@@ -1,6 +1,6 @@
 from collections.abc import Generator
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from app.config import get_settings
@@ -23,6 +23,10 @@ def init_db() -> None:
     from app.db import tables  # noqa: F401
 
     Base.metadata.create_all(bind=engine)
+    if str(engine.url).startswith("sqlite"):
+        with engine.begin() as connection:
+            connection.execute(text("CREATE TRIGGER IF NOT EXISTS audit_no_update BEFORE UPDATE ON audit_events BEGIN SELECT RAISE(FAIL, 'audit events are append only'); END"))
+            connection.execute(text("CREATE TRIGGER IF NOT EXISTS audit_no_delete BEFORE DELETE ON audit_events BEGIN SELECT RAISE(FAIL, 'audit events are append only'); END"))
 
 
 def get_db() -> Generator[Session, None, None]:
@@ -31,4 +35,3 @@ def get_db() -> Generator[Session, None, None]:
         yield session
     finally:
         session.close()
-

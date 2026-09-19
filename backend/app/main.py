@@ -10,6 +10,8 @@ from app.api.workflow import router as workflow_router
 from app.api.records import router as records_router
 from app.api.mock_target import router as mock_target_router
 from app.api.events import router as events_router
+from app.api.audit import router as audit_router
+from app.observability import correlation_middleware
 from app.db.database import init_db
 
 
@@ -17,6 +19,7 @@ def create_app() -> FastAPI:
     settings = get_settings()
     application = FastAPI(title="MigrateFlow API", version="0.1.0")
     init_db()
+    application.middleware("http")(correlation_middleware)
     application.add_middleware(
         CORSMiddleware,
         allow_origins=[item.strip() for item in settings.cors_origins.split(",") if item.strip()],
@@ -53,6 +56,7 @@ def create_app() -> FastAPI:
     application.include_router(records_router)
     application.include_router(mock_target_router)
     application.include_router(events_router)
+    application.include_router(audit_router)
 
     return application
 
