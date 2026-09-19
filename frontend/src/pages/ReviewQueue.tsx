@@ -16,6 +16,15 @@ const FIELD_LABELS: Record<string, string> = {
   source_system: "Source system",
 };
 
+const REASON_LABELS: Record<string, string> = {
+  MODEL_RECOVERY_FALLBACK: "Confirm safe fallback mapping",
+  MODEL_BATCH_RETRY: "Confirm recovered model mapping",
+  CONFIDENCE_REVIEW: "Confirm suggested mapping",
+  LOW_CONFIDENCE_UNMAPPED: "Choose the correct target field",
+  AMBIGUOUS_DATE: "Confirm the date meaning",
+  TARGET_COLLISION: "Resolve duplicate target mapping",
+};
+
 function fieldLabel(field?: string) {
   if (!field) return "Value";
   return FIELD_LABELS[field] ?? field.replaceAll("_", " ").replace(/^./, (value) => value.toUpperCase());
@@ -95,11 +104,12 @@ export function ReviewQueue({ batchId, onCompleted }: { batchId: string; onCompl
       const helpId = `correction-help-${item.escalation_id}`;
       const displayName = fieldLabel(recordReview ? context.field : context.source_column);
       return <article className="review-card" key={item.escalation_id}>
-        <div className="card-top"><span>{context.source_file}{context.source_record_id ? ` - row ${context.source_record_id}` : ""}</span><strong>{recordReview ? "Action required" : item.reason_code.replaceAll("_", " ")}</strong></div>
+        <div className="card-top"><span>{context.source_file}{context.source_record_id ? ` - row ${context.source_record_id}` : ""}</span><strong>{recordReview ? "Action required" : REASON_LABELS[item.reason_code] ?? item.reason_code.replaceAll("_", " ")}</strong></div>
         <h3>{displayName}</h3>
         <p>{recordReview ? "Current value" : "Recommended target"}: <code>{String(context.current_value ?? item.suggestion ?? "Missing")}</code></p>
         {context.errors?.length ? <ul className="review-errors">{context.errors.map((message) => <li key={message}>{friendlyError(context.field, message)}</li>)}</ul> : null}
         {!recordReview && <div className="confidence">{Object.entries(item.confidence_evidence).map(([key, value]) => <label key={key}><span>{key.replaceAll("_", " ")}</span><progress max="1" value={value} /><small>{Math.round(value * 100)}%</small></label>)}</div>}
+        {!recordReview && item.reason_code === "MODEL_RECOVERY_FALLBACK" && <p className="review-explanation">Ollama did not return a complete structured response after retrying. MigrateFlow generated this safe suggestion from column names and data types. Confirm or correct it before continuing.</p>}
         {recordReview && <p className="review-explanation">Automatic validation could not safely fix this value. Enter the verified value below, or reject the record if you cannot confirm it.</p>}
         {can("CORRECT") && <div className="correction-field"><label htmlFor={correctionId}>{recordReview ? `Corrected ${displayName}` : "Choose the correct target field"}</label>
           {recordReview && !alternatives.length

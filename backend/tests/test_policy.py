@@ -18,10 +18,10 @@ def test_policy_auto_applies_only_high_confidence_safe_mapping() -> None:
     assert not evaluate_mapping(proposal(.89)).auto_apply
     assert not evaluate_mapping(proposal(.99, collision=True)).auto_apply
     assert not evaluate_mapping(proposal(.99, warnings=["AMBIGUOUS_DATE"])).auto_apply
+    assert not evaluate_mapping(proposal(.99, warnings=["MODEL_RECOVERY_FALLBACK"])).auto_apply
 
 
 def test_low_confidence_remains_unmapped() -> None:
     decision = evaluate_mapping(proposal(.4, target_field=None, requires_human=True))
     assert not decision.auto_apply
     assert decision.reason_code == "LOW_CONFIDENCE_UNMAPPED"
-

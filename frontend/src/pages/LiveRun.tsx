@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import type { WorkflowEvent, WorkflowStatus } from "../types";
 import { StatusPill } from "../components/StatusPill";
+import { friendlyWorkflowMessage } from "../utils/workflow";
 
 export function LiveRun({ batchId, onReview, onPreview }: { batchId: string; onReview: () => void; onPreview: () => void }) {
   const [events, setEvents] = useState<WorkflowEvent[]>([]);
@@ -58,7 +59,7 @@ export function LiveRun({ batchId, onReview, onPreview }: { batchId: string; onR
         if (transformed.status === "PAUSED") onReview(); else onPreview();
       }
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Workflow start failed");
+      setError(friendlyWorkflowMessage(reason instanceof Error ? reason.message : "The workflow could not start safely."));
     } finally {
       setBusy(false);
     }
@@ -66,6 +67,8 @@ export function LiveRun({ batchId, onReview, onPreview }: { batchId: string; onR
 
   const latestWorkflowState = events.filter((event) => ["workflow_paused", "workflow_resumed"].includes(event.event_type)).at(-1);
   const paused = workflowStatus?.status === "PAUSED" || latestWorkflowState?.event_type === "workflow_paused";
-  const actionLabel = workflowStatus?.status === "PAUSED" ? "Continue review" : workflowStatus?.status === "COMPLETED" ? "View results" : "Generate mappings and start";
-  return <section><div className="section-heading"><div><p className="eyebrow">Workflow activity</p><h2>Live run</h2></div><StatusPill value={paused ? "PAUSED" : connection.toUpperCase()} /></div>{paused && <div className="pause-banner" role="status"><strong>Human decision required</strong><span>The workflow is safely paused. Review the open escalation to continue.</span></div>}{error && <p role="alert" className="error">{error}</p>}{!batchId ? <div className="empty"><h3>No active migration</h3><p>Create a migration to see stage progress and safe action summaries.</p></div> : <><div className="run-controls"><div><strong>Ready to analyze this batch</strong><p>Generate structured model proposals, apply deterministic policy, reconcile sources, and pause only when human review is required.</p></div><button className="primary" disabled={busy} onClick={run}>{busy ? "Analyzing securely…" : actionLabel}</button></div><ol className="timeline">{events.map((event) => <li key={event.event_id}><span>{new Date(event.timestamp).toLocaleTimeString()}</span><div><strong>{event.event_type.replaceAll("_", " ")}</strong><pre>{JSON.stringify(event.payload)}</pre></div></li>)}</ol></>}</section>;
+  const lastEvent = events.at(-1);
+  const retryingFailure = lastEvent?.event_type === "workflow_failed";
+  const actionLabel = workflowStatus?.status === "PAUSED" ? "Continue review" : workflowStatus?.status === "COMPLETED" ? "View results" : retryingFailure ? "Retry safely" : "Generate mappings and start";
+  return <section><div className="section-heading"><div><p className="eyebrow">Step 2 of 5</p><h2>Analyze and map</h2></div><StatusPill value={paused ? "PAUSED" : connection.toUpperCase()} /></div>{paused && <div className="pause-banner" role="status"><strong>Next step: review decisions</strong><span>Analysis is complete and the workflow is safely paused. Open Step 3 to confirm uncertain mappings or values.</span></div>}{error && <p role="alert" className="error">{error}</p>}{!batchId ? <div className="empty"><h3>No active migration</h3><p>Complete Step 1: upload CSV or Excel files to begin.</p></div> : <><div className="run-controls"><div><strong>{retryingFailure ? "Safe retry available" : "Ready for Step 2"}</strong><p>{retryingFailure ? "The previous attempt changed no data. Retry once; if the model response is still incomplete, supervised fallback proposals will be sent to Step 3 for review." : "Select the button to analyze columns and propose target mappings. Nothing is pushed during this step."}</p></div><button className="primary" disabled={busy} onClick={run}>{busy ? "Analyzing securely…" : actionLabel}</button></div><ol className="timeline">{events.map((event) => <li key={event.event_id}><span>{new Date(event.timestamp).toLocaleTimeString()}</span><div><strong>{event.event_type.replaceAll("_", " ")}</strong>{event.event_type === "workflow_failed" ? <p>{friendlyWorkflowMessage(String(event.payload.message ?? "The workflow stopped safely."))}</p> : <pre>{JSON.stringify(event.payload)}</pre>}</div></li>)}</ol></>}</section>;
 }

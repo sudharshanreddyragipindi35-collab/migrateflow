@@ -8,8 +8,8 @@ import { ReviewQueue } from "./pages/ReviewQueue";
 import type { ModelRuntimeStatus, View } from "./types";
 
 const navigation: Array<[View, string, string]> = [
-  ["new", "+", "New migration"], ["live", "o", "Live run"], ["review", "◇", "Review queue"],
-  ["preview", "▤", "Data preview"], ["audit", "↗", "Integration audit"],
+  ["new", "1", "Upload files"], ["live", "2", "Analyze and map"], ["review", "3", "Review decisions"],
+  ["preview", "4", "Preview data"], ["audit", "5", "Push and audit"],
 ];
 
 export function App() {

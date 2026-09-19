@@ -33,4 +33,24 @@ describe("ReviewQueue", () => {
     expect(screen.getByRole("button", { name: "Save correction" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Reject record" })).toBeInTheDocument();
   });
+
+  it("explains a model recovery fallback without technical jargon", async () => {
+    const response = new Response(JSON.stringify([{
+      escalation_id: "mapping-review",
+      source_context: { source_file: "employees.xlsx", source_column: "Emp ID" },
+      suggestion: "employee_id",
+      alternatives: ["manager_id"],
+      confidence_evidence: { name_similarity: 1, model_proposal: 0.9 },
+      reason_code: "MODEL_RECOVERY_FALLBACK",
+      allowed_actions: ["APPROVE", "CORRECT", "REJECT"],
+      status: "OPEN",
+    }]), { status: 200, headers: { "Content-Type": "application/json" } });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(response));
+
+    render(<ReviewQueue batchId="batch-2" onCompleted={() => undefined} />);
+
+    expect(await screen.findByText("Confirm safe fallback mapping")).toBeInTheDocument();
+    expect(screen.getByText(/Ollama did not return a complete structured response/i)).toBeInTheDocument();
+    expect(screen.getByText(/Confirm or correct it before continuing/i)).toBeInTheDocument();
+  });
 });

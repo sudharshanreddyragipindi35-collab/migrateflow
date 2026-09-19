@@ -78,7 +78,7 @@ ollama serve
 
 Set `MODEL_MODE=ollama` for live structured proposals. Set `MODEL_MODE=fallback` to use the clearly labelled deterministic mapping fallback. If Ollama is selected but unavailable, the API returns an explicit 503 instead of imitating model output.
 
-Live semantic proposals are batched once per source file rather than once per column. Independent source-file requests run concurrently, controlled by `LLM_PARALLEL_WORKERS` (default `3`). A single seven-column file therefore makes one model call; three files can use up to three concurrent calls. If a structured response is incomplete, only that file batch is retried once; concurrent retries wait until the parallel wave is finished. A local 7B model can still take one to three minutes on CPU-heavy hardware; use fallback mode for a fast UI walkthrough and Ollama mode for the final open-source-model demonstration.
+Live semantic proposals are batched once per source file rather than once per column. Independent source-file requests run concurrently, controlled by `LLM_PARALLEL_WORKERS` (default `3`). A single seven-column file therefore normally makes one model call; three files can use up to three concurrent calls. If structured output is incomplete, MigrateFlow retries that file batch once. If the model remains invalid or unavailable, the workflow immediately continues with clearly labelled deterministic proposals that must be reviewed by a person; it never silently treats fallback output as model output or multiplies a slow request into many per-column calls. A local 7B model can still take one to three minutes on CPU-heavy hardware; use fallback mode for a fast UI walkthrough and Ollama mode for the final open-source-model demonstration.
 
 ## Anthropic model setup
 

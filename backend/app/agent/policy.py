@@ -2,7 +2,13 @@ from dataclasses import dataclass
 
 from app.mapping.models import MappingProposal
 
-POLICY_WARNINGS = {"TARGET_COLLISION", "AMBIGUOUS_DATE", "CONFLICTING_IDENTIFIER", "DISPUTED_REQUIRED_FIELD"}
+POLICY_WARNINGS = {
+    "TARGET_COLLISION",
+    "AMBIGUOUS_DATE",
+    "CONFLICTING_IDENTIFIER",
+    "DISPUTED_REQUIRED_FIELD",
+    "MODEL_RECOVERY_FALLBACK",
+}
 
 
 @dataclass(frozen=True)
@@ -24,4 +30,3 @@ def evaluate_mapping(proposal: MappingProposal) -> PolicyDecision:
     if proposal.confidence < 0.90:
         return PolicyDecision(False, "CONFIDENCE_REVIEW")
     return PolicyDecision(True, "HIGH_CONFIDENCE")
-

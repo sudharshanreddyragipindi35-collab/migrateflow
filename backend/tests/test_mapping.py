@@ -73,17 +73,15 @@ class InvalidModel:
         raise InvalidModelOutput("invalid structured response")
 
 
-def test_invalid_model_output_fails_safely() -> None:
+def test_invalid_model_output_degrades_to_reviewable_fallback() -> None:
     profile = SourceFileProfile(
         file_name="employees.csv", sheet_name=None, row_count=1,
         columns=[column("email", "email")], duplicate_row_count=0, encoding="utf-8",
     )
-    try:
-        propose_mappings([profile], load_target_schema(), InvalidModel())
-    except InvalidModelOutput as exc:
-        assert "structured" in str(exc)
-    else:
-        raise AssertionError("invalid output must not be accepted")
+    proposal = propose_mappings([profile], load_target_schema(), InvalidModel())[0]
+    assert proposal.provider == "deterministic_fallback"
+    assert proposal.requires_human
+    assert "MODEL_RECOVERY_FALLBACK" in proposal.warnings
 
 
 def test_anthropic_requires_api_key_without_making_a_request() -> None:
@@ -239,6 +237,62 @@ def test_incomplete_single_file_batch_is_retried_once() -> None:
     )
     assert len(proposals) == 1
     assert model.attempts == 2
+
+
+class InvalidBatchModel:
+    provider = "invalid-batch-test"
+
+    def __init__(self) -> None:
+        self.batch_calls = 0
+
+    def propose(self, source_file: str, item: ColumnProfile, schema: object) -> ModelMapping:
+        raise AssertionError("per-column model calls must not multiply recovery time")
+
+    def propose_many(
+        self, source_file: str, columns: list[ColumnProfile], schema: object
+    ) -> dict[str, ModelMapping]:
+        self.batch_calls += 1
+        raise InvalidModelOutput("batch is incomplete")
+
+
+def test_persistently_incomplete_batch_falls_back_after_one_retry() -> None:
+    profile = SourceFileProfile(
+        file_name="split.csv", sheet_name=None, row_count=1,
+        columns=[column("employee_id"), column("email", "email"), column("staff_id")],
+        duplicate_row_count=0, encoding="utf-8",
+    )
+    model = InvalidBatchModel()
+    proposals = propose_mappings([profile], load_target_schema(), model)
+    assert len(proposals) == 3
+    assert model.batch_calls == 2
+    assert all(item.provider == "deterministic_fallback" for item in proposals)
+    assert all(item.requires_human for item in proposals)
+    assert all("MODEL_RECOVERY_FALLBACK" in item.warnings for item in proposals)
+
+
+class UnavailableBatchModel(InvalidBatchModel):
+    provider = "unavailable-test"
+
+    def propose(self, source_file: str, item: ColumnProfile, schema: object) -> ModelMapping:
+        raise ModelUnavailable("provider unavailable")
+
+    def propose_many(
+        self, source_file: str, columns: list[ColumnProfile], schema: object
+    ) -> dict[str, ModelMapping]:
+        raise ModelUnavailable("provider unavailable")
+
+
+def test_provider_outage_degrades_to_human_review_instead_of_failing() -> None:
+    profile = SourceFileProfile(
+        file_name="outage.csv", sheet_name=None, row_count=1,
+        columns=[column("employee_id"), column("email", "email")],
+        duplicate_row_count=0, encoding="utf-8",
+    )
+    proposals = propose_mappings([profile], load_target_schema(), UnavailableBatchModel())
+    assert len(proposals) == 2
+    assert all(item.provider == "deterministic_fallback" for item in proposals)
+    assert all(item.requires_human for item in proposals)
+    assert all("MODEL_RECOVERY_FALLBACK" in item.warnings for item in proposals)
 
 
 def test_batch_prompt_masks_every_column() -> None:

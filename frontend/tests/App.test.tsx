@@ -12,13 +12,15 @@ describe("App", () => {
   it("renders the product navigation and accessible uploader", () => {
     render(<App />);
     expect(screen.getByRole("link", { name: "MigrateFlow home" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Drop CSV or XLSX files/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Drop CSV or Excel files/i })).toBeInTheDocument();
+    expect(screen.getByText("Step 1 of 5")).toBeInTheDocument();
+    expect(screen.getByText(/Accepted: .csv and .xlsx/i)).toBeInTheDocument();
     expect(screen.getByLabelText("Choose employee files")).toHaveAttribute("multiple");
   });
 
   it("shows an unmistakable empty live state", async () => {
     render(<App />);
-    screen.getByRole("button", { name: /Live run/ }).click();
+    screen.getByRole("button", { name: /Analyze and map/ }).click();
     expect(await screen.findByText("No active migration")).toBeInTheDocument();
   });
 
@@ -26,8 +28,8 @@ describe("App", () => {
     render(<App />);
     const input = screen.getByLabelText("Choose employee files");
     fireEvent.change(input, { target: { files: [new File(["x"], "employees.exe")] } });
-    expect(screen.getByRole("alert")).toHaveTextContent("not a CSV or XLSX");
-    expect(screen.getByRole("button", { name: "Create migration" })).toBeDisabled();
+    expect(screen.getByRole("alert")).toHaveTextContent("Choose a CSV (.csv) or Excel (.xlsx) file");
+    expect(screen.getByRole("button", { name: "Continue to analysis" })).toBeDisabled();
   });
 
   it("shows the active model provider and readiness", async () => {

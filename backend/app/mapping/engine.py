@@ -245,9 +245,61 @@ def propose_mappings(
     proposals: list[MappingProposal] = []
     target_by_name = {item.name: item for item in schema.fields}
     propose_many = getattr(adapter, "propose_many", None)
+    fallback_adapter = DeterministicFallback()
 
     def propose_profile(profile: SourceFileProfile) -> dict[str, ModelMapping] | None:
         return propose_many(profile.file_name, profile.columns, schema) if callable(propose_many) else None
+
+    def annotate(mapping: ModelMapping, warning: str, explanation: str) -> ModelMapping:
+        return mapping.model_copy(
+            update={
+                "reasoning": f"{explanation} {mapping.reasoning}",
+                "warnings": list(dict.fromkeys([*mapping.warnings, warning])),
+            }
+        )
+
+    def fallback_columns(
+        profile: SourceFileProfile, columns: list[ColumnProfile]
+    ) -> dict[str, ModelMapping]:
+        return {
+            column.name: annotate(
+                fallback_adapter.propose(profile.file_name, column, schema),
+                "MODEL_RECOVERY_FALLBACK",
+                "The configured model could not return a valid structured result; human review is required.",
+            )
+            for column in columns
+        }
+
+    def recover_profile(profile: SourceFileProfile) -> dict[str, ModelMapping]:
+        try:
+            result = propose_profile(profile)
+            if result is None:
+                return fallback_columns(profile, profile.columns)
+            return {
+                name: annotate(
+                    mapping,
+                    "MODEL_BATCH_RETRY",
+                    "Recovered after retrying the structured model response.",
+                )
+                for name, mapping in result.items()
+            }
+        except ModelUnavailable:
+            return fallback_columns(profile, profile.columns)
+        except InvalidModelOutput:
+            return fallback_columns(profile, profile.columns)
+
+    def propose_column_safely(profile: SourceFileProfile, column: ColumnProfile) -> ModelMapping:
+        try:
+            return adapter.propose(profile.file_name, column, schema)
+        except (InvalidModelOutput, ModelUnavailable):
+            try:
+                return annotate(
+                    adapter.propose(profile.file_name, column, schema),
+                    "MODEL_BATCH_RETRY",
+                    "Recovered after retrying the structured model response.",
+                )
+            except (InvalidModelOutput, ModelUnavailable):
+                return fallback_columns(profile, [column])[column.name]
 
     worker_count = min(len(profiles), max(1, parallel_workers))
     if callable(propose_many) and worker_count > 1:
@@ -263,21 +315,21 @@ def propose_mappings(
         # Concurrent local inference can be resource-sensitive. Retry only failed
         # file batches after the parallel wave, when the provider is no longer busy.
         for index in retry_indexes:
-            batch_results_by_profile[index] = propose_profile(profiles[index])
+            batch_results_by_profile[index] = recover_profile(profiles[index])
     else:
         batch_results_by_profile = []
         for profile in profiles:
             try:
                 batch_results_by_profile.append(propose_profile(profile))
             except (InvalidModelOutput, ModelUnavailable):
-                batch_results_by_profile.append(propose_profile(profile))
+                batch_results_by_profile.append(recover_profile(profile))
 
     for profile, batch_results in zip(profiles, batch_results_by_profile, strict=True):
         for column in profile.columns:
             model_result = (
                 batch_results[column.name]
                 if batch_results is not None
-                else adapter.propose(profile.file_name, column, schema)
+                else propose_column_safely(profile, column)
             )
             candidates = _candidate_scores(column, schema)
             selected = target_by_name.get(model_result.target_field or "")
@@ -297,7 +349,11 @@ def propose_mappings(
                         ),
                         warnings=model_result.warnings,
                         requires_human=True,
-                        provider=adapter.provider,
+                        provider=(
+                            "deterministic_fallback"
+                            if "MODEL_RECOVERY_FALLBACK" in model_result.warnings
+                            else adapter.provider
+                        ),
                     )
                 )
                 continue
@@ -326,8 +382,16 @@ def propose_mappings(
                     reasoning=model_result.reasoning,
                     evidence=components,
                     warnings=warnings,
-                    requires_human=final < 0.90 or "AMBIGUOUS_DATE" in warnings,
-                    provider=adapter.provider,
+                    requires_human=(
+                        final < 0.90
+                        or "AMBIGUOUS_DATE" in warnings
+                        or "MODEL_RECOVERY_FALLBACK" in warnings
+                    ),
+                    provider=(
+                        "deterministic_fallback"
+                        if "MODEL_RECOVERY_FALLBACK" in warnings
+                        else adapter.provider
+                    ),
                 )
             )
     grouped: dict[tuple[str, str], list[MappingProposal]] = defaultdict(list)
